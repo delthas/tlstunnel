@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -14,7 +15,7 @@ func main() {
 		log.Fatalf("failed to load config file: %v", err)
 	}
 
-	srv := &Server{}
+	srv := NewServer()
 
 	for _, d := range directives {
 		if err := parseFrontend(srv, d); err != nil {
@@ -38,6 +39,7 @@ func parseFrontend(srv *Server, d *Directive) error {
 		return err
 	}
 
+	var listenNames []string
 	for _, listenDirective := range d.ChildrenByName("listen") {
 		var listenAddr string
 		if err := listenDirective.ParseParams(&listenAddr); err != nil {
@@ -51,6 +53,7 @@ func parseFrontend(srv *Server, d *Directive) error {
 
 		// TODO: come up with something more robust
 		if host != "localhost" && net.ParseIP(host) == nil {
+			listenNames = append(listenNames, host)
 			host = ""
 		}
 
@@ -64,6 +67,10 @@ func parseFrontend(srv *Server, d *Directive) error {
 				log.Fatalf("failed to serve: %v", err)
 			}
 		}()
+	}
+
+	if err := srv.certmagic.ManageAsync(context.Background(), listenNames); err != nil {
+		return fmt.Errorf("failed to manage TLS certificates: %v", err)
 	}
 
 	return nil

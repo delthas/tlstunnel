@@ -1,13 +1,33 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
+	"log"
 	"net"
+
+	"github.com/caddyserver/certmagic"
 )
 
 type Server struct {
 	Frontends []*Frontend
+	certmagic *certmagic.Config
+}
+
+func NewServer() *Server {
+	cfg := certmagic.NewDefault()
+
+	acme := certmagic.DefaultACME
+	acme.CA = certmagic.LetsEncryptStagingCA
+	acme.Agreed = true
+	// TODO: enable HTTP challenge by peeking incoming requests on port 80
+	acme.DisableHTTPChallenge = true
+	mgr := certmagic.NewACMEManager(cfg, acme)
+	cfg.Issuer = mgr
+	cfg.Revoker = mgr
+
+	return &Server{certmagic: cfg}
 }
 
 type Frontend struct {
@@ -22,8 +42,13 @@ func (fe *Frontend) Serve(ln net.Listener) error {
 			return fmt.Errorf("failed to accept connection: %v", err)
 		}
 
-		// TODO: log errors to debug log
-		go fe.handle(conn)
+		conn = tls.Server(conn, fe.Server.certmagic.TLSConfig())
+
+		go func() {
+			if err := fe.handle(conn); err != nil {
+				log.Printf("error handling connection: %v", err)
+			}
+		}()
 	}
 }
 
