@@ -1,4 +1,4 @@
-# tlstunnel
+# [tlstunnel]
 
 A TLS reverse proxy.
 
@@ -18,4 +18,5 @@ See the man page for more information.
 
 MIT
 
+[tlstunnel]: https://sr.ht/~emersion/tlstunnel/
 [PROXY protocol]: https://www.haproxy.org/download/2.3/doc/proxy-protocol.txt
