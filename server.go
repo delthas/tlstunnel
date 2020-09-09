@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -11,27 +12,28 @@ import (
 )
 
 type Server struct {
-	Listeners map[string]*Listener // indexed by listening address
-	Frontends []*Frontend
-	certmagic *certmagic.Config
+	Listeners    map[string]*Listener // indexed by listening address
+	Frontends    []*Frontend
+	ManagedNames []string
+
+	acmeManager *certmagic.ACMEManager
+	certmagic   *certmagic.Config
 }
 
 func NewServer() *Server {
 	cfg := certmagic.NewDefault()
 
-	acme := certmagic.DefaultACME
-	// TODO: use production CA
-	acme.CA = certmagic.LetsEncryptStagingCA
-	acme.Agreed = true
+	mgr := certmagic.NewACMEManager(cfg, certmagic.DefaultACME)
+	mgr.Agreed = true
 	// TODO: enable HTTP challenge by peeking incoming requests on port 80
-	acme.DisableHTTPChallenge = true
-	mgr := certmagic.NewACMEManager(cfg, acme)
+	mgr.DisableHTTPChallenge = true
 	cfg.Issuer = mgr
 	cfg.Revoker = mgr
 
 	return &Server{
-		Listeners: make(map[string]*Listener),
-		certmagic: cfg,
+		Listeners:   make(map[string]*Listener),
+		acmeManager: mgr,
+		certmagic:   cfg,
 	}
 }
 
@@ -46,6 +48,10 @@ func (srv *Server) RegisterListener(addr string) *Listener {
 }
 
 func (srv *Server) Start() error {
+	if err := srv.certmagic.ManageAsync(context.Background(), srv.ManagedNames); err != nil {
+		return fmt.Errorf("failed to manage TLS certificates: %v", err)
+	}
+
 	for _, ln := range srv.Listeners {
 		if err := ln.Start(); err != nil {
 			return err
