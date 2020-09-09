@@ -1,5 +1,7 @@
 # [tlstunnel]
 
+[![builds.sr.ht status](https://builds.sr.ht/~emersion/tlstunnel/commits.svg)](https://builds.sr.ht/~emersion/tlstunnel/commits?)
+
 A TLS reverse proxy.
 
 - Automatic TLS with Let's Encrypt

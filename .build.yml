@@ -1,0 +1,11 @@
+image: alpine/edge
+packages:
+  - go
+  - scdoc
+sources:
+  - https://git.sr.ht/~emersion/tlstunnel
+tasks:
+  - build: |
+      cd tlstunnel
+      go test -v ./...
+      scdoc <tlstunnel.1.scd >/dev/null
