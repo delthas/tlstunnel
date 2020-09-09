@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -8,8 +9,13 @@ import (
 	"strings"
 )
 
+var configPath = "config"
+
 func main() {
-	cfg, err := Load("config")
+	flag.StringVar(&configPath, "config", configPath, "path to configuration file")
+	flag.Parse()
+
+	cfg, err := Load(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config file: %v", err)
 	}
