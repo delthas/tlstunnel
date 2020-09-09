@@ -47,7 +47,7 @@ func (d *Directive) ChildByName(name string) *Directive {
 	return nil
 }
 
-func Load(path string) ([]*Directive, error) {
+func Load(path string) (*Directive, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func Load(path string) ([]*Directive, error) {
 	return Parse(f)
 }
 
-func Parse(r io.Reader) ([]*Directive, error) {
+func Parse(r io.Reader) (*Directive, error) {
 	scanner := bufio.NewScanner(r)
 
 	var directives []*Directive
@@ -66,7 +66,7 @@ func Parse(r io.Reader) ([]*Directive, error) {
 		l := scanner.Text()
 		words, err := shlex.Split(l)
 		if err != nil {
-			return directives, fmt.Errorf("failed to parse config file: %v", err)
+			return nil, fmt.Errorf("failed to parse config file: %v", err)
 		} else if len(words) == 0 {
 			continue
 		}
@@ -98,5 +98,5 @@ func Parse(r io.Reader) ([]*Directive, error) {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	return directives, nil
+	return &Directive{Children: directives}, nil
 }

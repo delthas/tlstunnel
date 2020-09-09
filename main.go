@@ -10,14 +10,14 @@ import (
 )
 
 func main() {
-	directives, err := Load("config")
+	cfg, err := Load("config")
 	if err != nil {
 		log.Fatalf("failed to load config file: %v", err)
 	}
 
 	srv := NewServer()
 
-	for _, d := range directives {
+	for _, d := range cfg.ChildrenByName("frontend") {
 		if err := parseFrontend(srv, d); err != nil {
 			log.Fatalf("failed to parse frontend: %v", err)
 		}
