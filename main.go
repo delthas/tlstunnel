@@ -23,6 +23,10 @@ func main() {
 		}
 	}
 
+	if err := srv.Start(); err != nil {
+		log.Fatal(err)
+	}
+
 	select {}
 }
 
@@ -52,21 +56,19 @@ func parseFrontend(srv *Server, d *Directive) error {
 		}
 
 		// TODO: come up with something more robust
+		var name string
 		if host != "localhost" && net.ParseIP(host) == nil {
+			name = host
 			listenNames = append(listenNames, host)
 			host = ""
 		}
 
-		ln, err := net.Listen("tcp", net.JoinHostPort(host, port))
-		if err != nil {
-			return fmt.Errorf("failed to listen on %q: %v", listenAddr, err)
-		}
+		addr := net.JoinHostPort(host, port)
 
-		go func() {
-			if err := frontend.Serve(ln); err != nil {
-				log.Fatalf("failed to serve: %v", err)
-			}
-		}()
+		ln := srv.RegisterListener(addr)
+		if err := ln.RegisterFrontend(name, frontend); err != nil {
+			return err
+		}
 	}
 
 	if err := srv.certmagic.ManageAsync(context.Background(), listenNames); err != nil {
