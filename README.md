@@ -12,6 +12,8 @@ Example configuration:
         backend localhost:8080
     }
 
+See the man page for more information.
+
 ## License
 
 MIT
