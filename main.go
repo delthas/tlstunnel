@@ -43,7 +43,7 @@ func parseFrontend(srv *Server, d *Directive) error {
 		return err
 	}
 
-	var listenNames []string
+	var certNames []string
 	for _, listenAddr := range d.Params {
 		host, port, err := net.SplitHostPort(listenAddr)
 		if err != nil {
@@ -52,9 +52,9 @@ func parseFrontend(srv *Server, d *Directive) error {
 
 		// TODO: come up with something more robust
 		var name string
-		if host != "localhost" && net.ParseIP(host) == nil {
+		if host != "" && host != "localhost" && net.ParseIP(host) == nil {
 			name = host
-			listenNames = append(listenNames, host)
+			certNames = append(certNames, host)
 			host = ""
 		}
 
@@ -66,7 +66,7 @@ func parseFrontend(srv *Server, d *Directive) error {
 		}
 	}
 
-	if err := srv.certmagic.ManageAsync(context.Background(), listenNames); err != nil {
+	if err := srv.certmagic.ManageAsync(context.Background(), certNames); err != nil {
 		return fmt.Errorf("failed to manage TLS certificates: %v", err)
 	}
 

@@ -118,6 +118,8 @@ func (ln *Listener) handle(conn net.Conn) error {
 
 	tlsState := tlsConn.ConnectionState()
 
+	// TODO: support wildcard certificates. Sadly this requires solving a DNS
+	// challenge.
 	fe, ok := ln.Frontends[tlsState.ServerName]
 	if !ok {
 		fe, ok = ln.Frontends[""]
