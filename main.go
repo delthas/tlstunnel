@@ -44,12 +44,7 @@ func parseFrontend(srv *Server, d *Directive) error {
 	}
 
 	var listenNames []string
-	for _, listenDirective := range d.ChildrenByName("listen") {
-		var listenAddr string
-		if err := listenDirective.ParseParams(&listenAddr); err != nil {
-			return err
-		}
-
+	for _, listenAddr := range d.Params {
 		host, port, err := net.SplitHostPort(listenAddr)
 		if err != nil {
 			return fmt.Errorf("failed to parse listen address %q: %v", listenAddr, err)
