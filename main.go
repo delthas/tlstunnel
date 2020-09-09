@@ -120,7 +120,7 @@ func parseBackend(backend *Backend, d *Directive) error {
 func parseTLS(srv *Server, d *Directive) error {
 	for _, child := range d.Children {
 		switch child.Name {
-		case "ca":
+		case "acme_ca":
 			var caURL string
 			if err := child.ParseParams(&caURL); err != nil {
 				return err
