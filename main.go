@@ -98,7 +98,10 @@ func parseBackend(backend *Backend, d *Directive) error {
 		return fmt.Errorf("failed to parse backend URI %q: %v", backendURI, err)
 	}
 
-	// TODO: +proxy to use the PROXY protocol
+	if strings.HasSuffix(u.Scheme, "+proxy") {
+		u.Scheme = strings.TrimSuffix(u.Scheme, "+proxy")
+		backend.Proxy = true
+	}
 
 	switch u.Scheme {
 	case "", "tcp":

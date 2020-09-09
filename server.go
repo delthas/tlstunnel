@@ -9,6 +9,7 @@ import (
 	"net"
 
 	"github.com/caddyserver/certmagic"
+	"github.com/pires/go-proxyproto"
 )
 
 type Server struct {
@@ -152,12 +153,20 @@ func (fe *Frontend) handle(downstream net.Conn) error {
 	}
 	defer upstream.Close()
 
+	if be.Proxy {
+		h := proxyHeader(downstream.RemoteAddr(), downstream.LocalAddr())
+		if _, err := h.WriteTo(upstream); err != nil {
+			return fmt.Errorf("failed to write PROXY protocol header: %v", err)
+		}
+	}
+
 	return duplexCopy(upstream, downstream)
 }
 
 type Backend struct {
 	Network string
 	Address string
+	Proxy   bool
 }
 
 func duplexCopy(a, b io.ReadWriter) error {
@@ -171,4 +180,32 @@ func duplexCopy(a, b io.ReadWriter) error {
 		done <- err
 	}()
 	return <-done
+}
+
+func proxyHeader(sourceAddr, destAddr net.Addr) *proxyproto.Header {
+	h := proxyproto.Header{
+		Version: 2,
+		Command: proxyproto.PROXY,
+	}
+
+	switch sourceAddr := sourceAddr.(type) {
+	case *net.TCPAddr:
+		destAddr, ok := destAddr.(*net.TCPAddr)
+		if !ok {
+			break
+		}
+		if localIP4 := sourceAddr.IP.To4(); len(localIP4) == net.IPv4len {
+			h.TransportProtocol = proxyproto.TCPv4
+		} else if len(sourceAddr.IP) == net.IPv6len {
+			h.TransportProtocol = proxyproto.TCPv6
+		} else {
+			break
+		}
+		h.SourceAddress = sourceAddr.IP
+		h.DestinationAddress = destAddr.IP
+		h.SourcePort = uint16(sourceAddr.Port)
+		h.DestinationPort = uint16(destAddr.Port)
+	}
+
+	return &h
 }
