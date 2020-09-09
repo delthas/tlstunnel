@@ -82,7 +82,14 @@ func Parse(r io.Reader) (*Directive, error) {
 		var d *Directive
 		if words[len(words)-1] == "{" && l[len(l)-1] == '{' {
 			words = words[:len(words)-1]
-			d = &Directive{Params: words}
+
+			var name string
+			params := words
+			if len(words) > 0 {
+				name, params = words[0], words[1:]
+			}
+
+			d = &Directive{Name: name, Params: params}
 			cur = d
 			directives = append(directives, d)
 		} else {
