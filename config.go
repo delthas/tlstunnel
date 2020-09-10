@@ -47,17 +47,17 @@ func (d *Directive) ChildByName(name string) *Directive {
 	return nil
 }
 
-func Load(path string) (*Directive, error) {
+func LoadConfig(path string) (*Directive, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	return Parse(f)
+	return ParseConfig(f)
 }
 
-func Parse(r io.Reader) (*Directive, error) {
+func ParseConfig(r io.Reader) (*Directive, error) {
 	scanner := bufio.NewScanner(r)
 
 	var directives []*Directive

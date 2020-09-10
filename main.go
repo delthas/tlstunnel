@@ -15,7 +15,7 @@ func main() {
 	flag.StringVar(&configPath, "config", configPath, "path to configuration file")
 	flag.Parse()
 
-	cfg, err := Load(configPath)
+	cfg, err := LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config file: %v", err)
 	}
