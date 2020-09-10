@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/url"
 	"strings"
+
+	"git.sr.ht/~emersion/tlstunnel"
 )
 
 var configPath = "config"
@@ -15,12 +17,12 @@ func main() {
 	flag.StringVar(&configPath, "config", configPath, "path to configuration file")
 	flag.Parse()
 
-	cfg, err := LoadConfig(configPath)
+	cfg, err := tlstunnel.LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config file: %v", err)
 	}
 
-	srv := NewServer()
+	srv := tlstunnel.NewServer()
 
 	for _, d := range cfg.Children {
 		var err error
@@ -44,8 +46,8 @@ func main() {
 	select {}
 }
 
-func parseFrontend(srv *Server, d *Directive) error {
-	frontend := &Frontend{Server: srv}
+func parseFrontend(srv *tlstunnel.Server, d *tlstunnel.Directive) error {
+	frontend := &tlstunnel.Frontend{Server: srv}
 	srv.Frontends = append(srv.Frontends, frontend)
 
 	// TODO: support multiple backends
@@ -83,7 +85,7 @@ func parseFrontend(srv *Server, d *Directive) error {
 	return nil
 }
 
-func parseBackend(backend *Backend, d *Directive) error {
+func parseBackend(backend *tlstunnel.Backend, d *tlstunnel.Directive) error {
 	var backendURI string
 	if err := d.ParseParams(&backendURI); err != nil {
 		return err
@@ -117,7 +119,7 @@ func parseBackend(backend *Backend, d *Directive) error {
 	return nil
 }
 
-func parseTLS(srv *Server, d *Directive) error {
+func parseTLS(srv *tlstunnel.Server, d *tlstunnel.Directive) error {
 	for _, child := range d.Children {
 		switch child.Name {
 		case "acme_ca":

@@ -1,4 +1,4 @@
-package main
+package tlstunnel
 
 import (
 	"context"
@@ -16,9 +16,9 @@ type Server struct {
 	Listeners    map[string]*Listener // indexed by listening address
 	Frontends    []*Frontend
 	ManagedNames []string
-	ACMEManager *certmagic.ACMEManager
+	ACMEManager  *certmagic.ACMEManager
 
-	certmagic   *certmagic.Config
+	certmagic *certmagic.Config
 }
 
 func NewServer() *Server {

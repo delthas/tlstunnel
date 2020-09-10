@@ -12,7 +12,7 @@ MANDIR = share/man
 all: tlstunnel tlstunnel.1
 
 tlstunnel:
-	$(GO) build $(GOFLAGS) .
+	$(GO) build $(GOFLAGS) ./cmd/tlstunnel
 tlstunnel.1: tlstunnel.1.scd
 	$(SCDOC) <tlstunnel.1.scd >tlstunnel.1
 
