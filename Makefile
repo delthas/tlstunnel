@@ -21,7 +21,7 @@ tlstunnel.1: tlstunnel.1.scd
 	$(SCDOC) <tlstunnel.1.scd >tlstunnel.1
 
 clean:
-	$(RM) -rf tlstunnel doc/tlstunnel.1
+	$(RM) -rf tlstunnel tlstunnel.1
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
