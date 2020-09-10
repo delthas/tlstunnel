@@ -38,6 +38,10 @@ func NewServer() *Server {
 	}
 }
 
+func (srv *Server) Load(cfg *Directive) error {
+	return parseConfig(srv, cfg)
+}
+
 func (srv *Server) RegisterListener(addr string) *Listener {
 	// TODO: normalize addr with net.LookupPort
 	ln, ok := srv.Listeners[addr]
