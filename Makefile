@@ -6,8 +6,8 @@ RM = rm
 SCDOC = scdoc
 GOFLAGS =
 PREFIX = /usr/local
-BINDIR = bin
-MANDIR = share/man
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/share/man
 
 all: tlstunnel tlstunnel.1
 
@@ -19,7 +19,7 @@ tlstunnel.1: tlstunnel.1.scd
 clean:
 	$(RM) -rf tlstunnel doc/tlstunnel.1
 install: all
-	mkdir -p $(DESTDIR)$(PREFIX)/$(BINDIR)
-	mkdir -p $(DESTDIR)$(PREFIX)/$(MANDIR)/man1
-	cp -f tlstunnel $(DESTDIR)$(PREFIX)/$(BINDIR)
-	cp -f tlstunnel.1 $(DESTDIR)$(PREFIX)/$(MANDIR)/man1
+	mkdir -p $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	cp -f tlstunnel $(DESTDIR)$(BINDIR)
+	cp -f tlstunnel.1 $(DESTDIR)$(MANDIR)/man1
