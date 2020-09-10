@@ -17,8 +17,7 @@ type Server struct {
 	Frontends    []*Frontend
 	ManagedNames []string
 	ACMEManager  *certmagic.ACMEManager
-
-	certmagic *certmagic.Config
+	ACMEConfig   *certmagic.Config
 }
 
 func NewServer() *Server {
@@ -34,7 +33,7 @@ func NewServer() *Server {
 	return &Server{
 		Listeners:   make(map[string]*Listener),
 		ACMEManager: mgr,
-		certmagic:   cfg,
+		ACMEConfig:  cfg,
 	}
 }
 
@@ -53,7 +52,7 @@ func (srv *Server) RegisterListener(addr string) *Listener {
 }
 
 func (srv *Server) Start() error {
-	if err := srv.certmagic.ManageAsync(context.Background(), srv.ManagedNames); err != nil {
+	if err := srv.ACMEConfig.ManageAsync(context.Background(), srv.ManagedNames); err != nil {
 		return fmt.Errorf("failed to manage TLS certificates: %v", err)
 	}
 
@@ -122,7 +121,7 @@ func (ln *Listener) handle(conn net.Conn) error {
 	defer conn.Close()
 
 	// TODO: setup timeouts
-	tlsConn := tls.Server(conn, ln.Server.certmagic.TLSConfig())
+	tlsConn := tls.Server(conn, ln.Server.ACMEConfig.TLSConfig())
 	if err := tlsConn.Handshake(); err != nil {
 		return err
 	}

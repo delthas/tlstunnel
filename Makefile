@@ -9,9 +9,11 @@ PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/share/man
 SYSCONFDIR = /etc
+SHAREDSTATEDIR = /var/lib
 
 goflags = $(GOFLAGS) \
-	-ldflags="-X 'main.configPath=$(SYSCONFDIR)/tlstunnel/config'"
+	-ldflags="-X main.configPath='$(SYSCONFDIR)/tlstunnel/config' \
+		-X main.certDataPath='$(SHAREDSTATEDIR)/tlstunnel'"
 
 all: tlstunnel tlstunnel.1
 

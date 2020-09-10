@@ -5,9 +5,13 @@ import (
 	"log"
 
 	"git.sr.ht/~emersion/tlstunnel"
+	"github.com/caddyserver/certmagic"
 )
 
-var configPath = "config"
+var (
+	configPath = "config"
+	certDataPath = ""
+)
 
 func main() {
 	flag.StringVar(&configPath, "config", configPath, "path to configuration file")
@@ -19,6 +23,10 @@ func main() {
 	}
 
 	srv := tlstunnel.NewServer()
+
+	if certDataPath != "" {
+		srv.ACMEConfig.Storage = &certmagic.FileStorage{Path: certDataPath}
+	}
 
 	if err := srv.Load(cfg); err != nil {
 		log.Fatal(err)
