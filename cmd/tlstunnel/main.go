@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	configPath = "config"
+	configPath   = "config"
 	certDataPath = ""
 )
 

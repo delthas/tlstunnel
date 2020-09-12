@@ -38,25 +38,21 @@ func parseFrontend(srv *Server, d *Directive) error {
 		return err
 	}
 
-	for _, listenAddr := range d.Params {
-		host, port, err := net.SplitHostPort(listenAddr)
+	for _, addr := range d.Params {
+		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
-			return fmt.Errorf("failed to parse listen address %q: %v", listenAddr, err)
+			return fmt.Errorf("failed to parse frontend address %q: %v", addr, err)
 		}
 
-		// TODO: come up with something more robust
-		var name string
-		if host != "" && host != "localhost" && net.ParseIP(host) == nil {
-			name = host
-			host = ""
-
-			srv.ManagedNames = append(srv.ManagedNames, name)
+		if host != "" {
+			srv.ManagedNames = append(srv.ManagedNames, host)
 		}
 
-		addr := net.JoinHostPort(host, port)
+		// TODO: allow to customize listen host
+		addr := net.JoinHostPort("", port)
 
 		ln := srv.RegisterListener(addr)
-		if err := ln.RegisterFrontend(name, frontend); err != nil {
+		if err := ln.RegisterFrontend(host, frontend); err != nil {
 			return err
 		}
 	}
