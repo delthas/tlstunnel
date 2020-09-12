@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/pires/go-proxyproto"
@@ -128,9 +129,15 @@ func (ln *Listener) handle(conn net.Conn) error {
 
 	tlsState := tlsConn.ConnectionState()
 
-	// TODO: support wildcard certificates. Sadly this requires solving a DNS
-	// challenge.
 	fe, ok := ln.Frontends[tlsState.ServerName]
+	if !ok {
+		// match wildcard certificates, allowing only a single, non-partial wildcard, in the left-most label
+		i := strings.IndexByte(tlsState.ServerName, '.')
+		// don't allow wildcards with only a TLD (eg *.com)
+		if i >= 0 && strings.IndexByte(tlsState.ServerName[i+1:], '.') >= 0 {
+			fe, ok = ln.Frontends["*"+tlsState.ServerName[i:]]
+		}
+	}
 	if !ok {
 		fe, ok = ln.Frontends[""]
 	}
