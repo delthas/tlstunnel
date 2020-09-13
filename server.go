@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"git.sr.ht/~emersion/go-scfg"
+
+	"github.com/mholt/acmez"
 	"github.com/caddyserver/certmagic"
 	"github.com/pires/go-proxyproto"
 	"github.com/pires/go-proxyproto/tlvparse"
@@ -133,7 +135,9 @@ func (ln *Listener) handle(conn net.Conn) error {
 	defer conn.Close()
 
 	// TODO: setup timeouts
-	tlsConn := tls.Server(conn, ln.Server.ACMEConfig.TLSConfig())
+	tlsConfig := ln.Server.ACMEConfig.TLSConfig()
+	tlsConfig.NextProtos = []string{acmez.ACMETLS1Protocol}
+	tlsConn := tls.Server(conn, tlsConfig)
 	if err := tlsConn.Handshake(); err != nil {
 		return err
 	}
