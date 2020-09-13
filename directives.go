@@ -6,8 +6,10 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
 	"git.sr.ht/~emersion/go-scfg"
+	"github.com/caddyserver/certmagic"
 )
 
 func parseConfig(srv *Server, cfg scfg.Block) error {
@@ -145,6 +147,23 @@ func parseTLS(srv *Server, d *scfg.Directive) error {
 				return err
 			}
 			srv.ACMEManager.Email = email
+		case "dns":
+			var providerType string
+			if err := child.ParseParams(&providerType); err != nil {
+				return err
+			}
+			provider, ok := Providers[providerType]
+			if !ok {
+				return fmt.Errorf("unknown dns provider %q", providerType)
+			}
+			d, err := provider(child.Params[1:]...)
+			if err != nil {
+				return fmt.Errorf("invalid dns provider %q: %v", providerType, err)
+			}
+			srv.ACMEManager.DNS01Solver = &certmagic.DNS01Solver{
+				DNSProvider:        d,
+				PropagationTimeout: 5 * time.Minute,
+			}
 		default:
 			return fmt.Errorf("unknown %q directive", child.Name)
 		}
