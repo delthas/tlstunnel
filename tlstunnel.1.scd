@@ -64,6 +64,14 @@ The following directives are supported:
 	*ca* <url>
 		ACME Certificate Authority endpoint.
 
+# FILES
+
+_/etc/tlstunnel/config_
+	Default configuration file location.
+
+_/var/lib/tlstunnel_
+	State files such as certificates are stored in this directory.
+
 # AUTHORS
 
 Maintained by Simon Ser <contact@emersion.fr>, who is assisted by other
