@@ -61,7 +61,7 @@ The following directives are supported:
 
 	The tls directive supports the following sub-directives:
 
-	*ca* <url>
+	*acme_ca* <url>
 		ACME Certificate Authority endpoint.
 
 # FILES
