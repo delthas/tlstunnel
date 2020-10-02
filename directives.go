@@ -103,6 +103,12 @@ func parseTLS(srv *Server, d *Directive) error {
 				return err
 			}
 			srv.ACMEManager.CA = caURL
+		case "email":
+			var email string
+			if err := child.ParseParams(&email); err != nil {
+				return err
+			}
+			srv.ACMEManager.Email = email
 		default:
 			return fmt.Errorf("unknown %q directive", child.Name)
 		}

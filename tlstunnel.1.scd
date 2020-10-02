@@ -64,6 +64,10 @@ The following directives are supported:
 	*acme_ca* <url>
 		ACME Certificate Authority endpoint.
 
+	*email* <address>
+		The email address to use when creating or selecting an existing ACME
+		server account
+
 # FILES
 
 _/etc/tlstunnel/config_
