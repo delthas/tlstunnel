@@ -145,7 +145,7 @@ func (ln *Listener) handle(conn net.Conn) error {
 		return fmt.Errorf("can't find frontend for server name %q", tlsState.ServerName)
 	}
 
-	return fe.handle(tlsConn)
+	return fe.handle(tlsConn, &tlsState)
 }
 
 type Frontend struct {
@@ -153,7 +153,7 @@ type Frontend struct {
 	Backend Backend
 }
 
-func (fe *Frontend) handle(downstream net.Conn) error {
+func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) error {
 	defer downstream.Close()
 
 	be := &fe.Backend
@@ -165,6 +165,15 @@ func (fe *Frontend) handle(downstream net.Conn) error {
 
 	if be.Proxy {
 		h := proxyproto.HeaderProxyFromAddrs(2, downstream.RemoteAddr(), downstream.LocalAddr())
+
+		var tlvs []proxyproto.TLV
+		if tlsState.ServerName != "" {
+			tlvs = append(tlvs, authorityTLV(tlsState.ServerName))
+		}
+		if err := h.SetTLVs(tlvs); err != nil {
+			return fmt.Errorf("failed to set PROXY protocol header TLVs: %v", err)
+		}
+
 		if _, err := h.WriteTo(upstream); err != nil {
 			return fmt.Errorf("failed to write PROXY protocol header: %v", err)
 		}
@@ -190,4 +199,12 @@ func duplexCopy(a, b io.ReadWriter) error {
 		done <- err
 	}()
 	return <-done
+}
+
+func authorityTLV(name string) proxyproto.TLV {
+	return proxyproto.TLV{
+		Type:   proxyproto.PP2_TYPE_AUTHORITY,
+		Length: len(name),
+		Value:  []byte(name),
+	}
 }
