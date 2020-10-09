@@ -11,6 +11,7 @@ import (
 
 	"github.com/caddyserver/certmagic"
 	"github.com/pires/go-proxyproto"
+	"github.com/pires/go-proxyproto/tlvparse"
 )
 
 type Server struct {
@@ -170,6 +171,11 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 		if tlsState.ServerName != "" {
 			tlvs = append(tlvs, authorityTLV(tlsState.ServerName))
 		}
+		if tlv, err := sslTLV(tlsState); err != nil {
+			return fmt.Errorf("failed to set PROXY protocol header SSL TLV: %v", err)
+		} else {
+			tlvs = append(tlvs, tlv)
+		}
 		if err := h.SetTLVs(tlvs); err != nil {
 			return fmt.Errorf("failed to set PROXY protocol header TLVs: %v", err)
 		}
@@ -201,10 +207,42 @@ func duplexCopy(a, b io.ReadWriter) error {
 	return <-done
 }
 
-func authorityTLV(name string) proxyproto.TLV {
+func newTLV(t proxyproto.PP2Type, v []byte) proxyproto.TLV {
 	return proxyproto.TLV{
-		Type:   proxyproto.PP2_TYPE_AUTHORITY,
-		Length: len(name),
-		Value:  []byte(name),
+		Type:   t,
+		Length: len(v),
+		Value:  v,
 	}
+}
+
+func authorityTLV(name string) proxyproto.TLV {
+	return newTLV(proxyproto.PP2_TYPE_AUTHORITY, []byte(name))
+}
+
+func sslTLV(state *tls.ConnectionState) (proxyproto.TLV, error) {
+	pp2ssl := tlvparse.PP2SSL{
+		Client: tlvparse.PP2_BITFIELD_CLIENT_SSL, // all of our connections are TLS
+		Verify: 1,                                // we haven't checked the client cert
+	}
+
+	var version string
+	switch state.Version {
+	case tls.VersionTLS10:
+		version = "TLSv1.0"
+	case tls.VersionTLS11:
+		version = "TLSv1.1"
+	case tls.VersionTLS12:
+		version = "TLSv1.2"
+	case tls.VersionTLS13:
+		version = "TLSv1.3"
+	}
+	if version != "" {
+		versionTLV := newTLV(proxyproto.PP2_SUBTYPE_SSL_VERSION, []byte(version))
+		pp2ssl.TLV = append(pp2ssl.TLV, versionTLV)
+	}
+
+	// TODO: add PP2_SUBTYPE_SSL_CIPHER, PP2_SUBTYPE_SSL_SIG_ALG, PP2_SUBTYPE_SSL_KEY_ALG
+	// TODO: check client-provided cert, if any
+
+	return pp2ssl.Marshal()
 }

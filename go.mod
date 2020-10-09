@@ -7,7 +7,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/miekg/dns v1.1.31 // indirect
-	github.com/pires/go-proxyproto v0.2.0
+	github.com/pires/go-proxyproto v0.2.1-0.20201009121050-c24efa3e2d93
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
