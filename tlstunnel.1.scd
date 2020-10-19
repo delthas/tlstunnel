@@ -66,6 +66,21 @@ The following directives are supported:
 
 			This disables automatic TLS.
 
+	*protocol* <name>...
+		List of supported application-layer protocols.
+
+		The first protocol which is also supported by the client is negociated.
+
+		The protocols will be advertised via the TLS ALPN extension. See the
+		IANA registry for a list of protocol names:
+		https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
+
+		For instance, for an HTTP server supporting HTTP/1 and HTTP/2:
+
+		```
+		protocol h2 http/1.1 http/1.0
+		```
+
 *tls* { ... }
 	Customise global TLS configuration.
 

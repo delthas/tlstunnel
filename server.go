@@ -133,35 +133,68 @@ func (ln *Listener) handle(conn net.Conn) error {
 	defer conn.Close()
 
 	// TODO: setup timeouts
-	tlsConn := tls.Server(conn, ln.Server.ACMEConfig.TLSConfig())
+	tlsConfig := ln.Server.ACMEConfig.TLSConfig()
+	getConfigForClient := tlsConfig.GetConfigForClient
+	tlsConfig.GetConfigForClient = func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
+		// Call previous GetConfigForClient function, if any
+		var tlsConfig *tls.Config
+		if getConfigForClient != nil {
+			var err error
+			tlsConfig, err = getConfigForClient(hello)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			tlsConfig = ln.Server.ACMEConfig.TLSConfig()
+		}
+
+		fe, err := ln.matchFrontend(hello.ServerName)
+		if err != nil {
+			return nil, err
+		}
+
+		tlsConfig.NextProtos = fe.Protocols
+		return tlsConfig, nil
+	}
+	tlsConn := tls.Server(conn, tlsConfig)
 	if err := tlsConn.Handshake(); err != nil {
 		return err
 	}
 
 	tlsState := tlsConn.ConnectionState()
+	fe, err := ln.matchFrontend(tlsState.ServerName)
+	if err != nil {
+		return err
+	}
 
-	fe, ok := ln.Frontends[tlsState.ServerName]
+	return fe.handle(tlsConn, &tlsState)
+}
+
+func (ln *Listener) matchFrontend(serverName string) (*Frontend, error) {
+	fe, ok := ln.Frontends[serverName]
 	if !ok {
-		// match wildcard certificates, allowing only a single, non-partial wildcard, in the left-most label
-		i := strings.IndexByte(tlsState.ServerName, '.')
-		// don't allow wildcards with only a TLD (eg *.com)
-		if i >= 0 && strings.IndexByte(tlsState.ServerName[i+1:], '.') >= 0 {
-			fe, ok = ln.Frontends["*"+tlsState.ServerName[i:]]
+		// Match wildcard certificates, allowing only a single, non-partial
+		// wildcard, in the left-most label
+		i := strings.IndexByte(serverName, '.')
+		// Don't allow wildcards with only a TLD (e.g. *.com)
+		if i >= 0 && strings.IndexByte(serverName[i+1:], '.') >= 0 {
+			fe, ok = ln.Frontends["*"+serverName[i:]]
 		}
 	}
 	if !ok {
 		fe, ok = ln.Frontends[""]
 	}
 	if !ok {
-		return fmt.Errorf("can't find frontend for server name %q", tlsState.ServerName)
+		return nil, fmt.Errorf("can't find frontend for server name %q", serverName)
 	}
 
-	return fe.handle(tlsConn, &tlsState)
+	return fe, nil
 }
 
 type Frontend struct {
-	Server  *Server
-	Backend Backend
+	Server    *Server
+	Backend   Backend
+	Protocols []string
 }
 
 func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) error {
@@ -183,6 +216,9 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 		var tlvs []proxyproto.TLV
 		if tlsState.ServerName != "" {
 			tlvs = append(tlvs, authorityTLV(tlsState.ServerName))
+		}
+		if tlsState.NegotiatedProtocol != "" {
+			tlvs = append(tlvs, alpnTLV(tlsState.NegotiatedProtocol))
 		}
 		if tlv, err := sslTLV(tlsState); err != nil {
 			return fmt.Errorf("failed to set PROXY protocol header SSL TLV: %v", err)
@@ -225,6 +261,13 @@ func authorityTLV(name string) proxyproto.TLV {
 	return proxyproto.TLV{
 		Type:  proxyproto.PP2_TYPE_AUTHORITY,
 		Value: []byte(name),
+	}
+}
+
+func alpnTLV(proto string) proxyproto.TLV {
+	return proxyproto.TLV{
+		Type: proxyproto.PP2_TYPE_ALPN,
+		Value: []byte(proto),
 	}
 }
 

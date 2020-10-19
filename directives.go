@@ -51,6 +51,11 @@ func parseFrontend(srv *Server, d *scfg.Directive) error {
 		}
 	}
 
+	protocolDirective := d.Children.Get("protocol")
+	if protocolDirective != nil {
+		frontend.Protocols = protocolDirective.Params
+	}
+
 	for _, addr := range d.Params {
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
