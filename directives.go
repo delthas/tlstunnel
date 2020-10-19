@@ -5,10 +5,12 @@ import (
 	"net"
 	"net/url"
 	"strings"
+
+	"git.sr.ht/~emersion/go-scfg"
 )
 
-func parseConfig(srv *Server, cfg *Directive) error {
-	for _, d := range cfg.Children {
+func parseConfig(srv *Server, cfg scfg.Block) error {
+	for _, d := range cfg {
 		var err error
 		switch d.Name {
 		case "frontend":
@@ -25,12 +27,12 @@ func parseConfig(srv *Server, cfg *Directive) error {
 	return nil
 }
 
-func parseFrontend(srv *Server, d *Directive) error {
+func parseFrontend(srv *Server, d *scfg.Directive) error {
 	frontend := &Frontend{Server: srv}
 	srv.Frontends = append(srv.Frontends, frontend)
 
 	// TODO: support multiple backends
-	backendDirective := d.ChildByName("backend")
+	backendDirective := d.Children.Get("backend")
 	if backendDirective == nil {
 		return fmt.Errorf("missing backend directive in frontend block")
 	}
@@ -60,7 +62,7 @@ func parseFrontend(srv *Server, d *Directive) error {
 	return nil
 }
 
-func parseBackend(backend *Backend, d *Directive) error {
+func parseBackend(backend *Backend, d *scfg.Directive) error {
 	var backendURI string
 	if err := d.ParseParams(&backendURI); err != nil {
 		return err
@@ -94,7 +96,7 @@ func parseBackend(backend *Backend, d *Directive) error {
 	return nil
 }
 
-func parseTLS(srv *Server, d *Directive) error {
+func parseTLS(srv *Server, d *scfg.Directive) error {
 	for _, child := range d.Children {
 		switch child.Name {
 		case "acme_ca":

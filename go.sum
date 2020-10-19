@@ -1,3 +1,5 @@
+git.sr.ht/~emersion/go-scfg v0.0.0-20201019141958-764b187dbd52 h1:4+M83ExDGB+goSgq+q+c1aMA43GRLsItdN23fTDjKZ4=
+git.sr.ht/~emersion/go-scfg v0.0.0-20201019141958-764b187dbd52/go.mod h1:t+Ww6SR24yYnXzEWiNlOY0AFo5E9B73X++10lrSpp4U=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/caddyserver/certmagic v0.12.0 h1:1f7kxykaJkOVVpXJ8ZrC6RAO5F6+kKm9U7dBFbLNeug=

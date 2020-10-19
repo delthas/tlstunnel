@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 
+	"git.sr.ht/~emersion/go-scfg"
 	"git.sr.ht/~emersion/tlstunnel"
 	"github.com/caddyserver/certmagic"
 )
@@ -17,7 +18,7 @@ func main() {
 	flag.StringVar(&configPath, "config", configPath, "path to configuration file")
 	flag.Parse()
 
-	cfg, err := tlstunnel.LoadConfig(configPath)
+	cfg, err := scfg.Load(configPath)
 	if err != nil {
 		log.Fatalf("failed to load config file: %v", err)
 	}

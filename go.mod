@@ -3,6 +3,7 @@ module git.sr.ht/~emersion/tlstunnel
 go 1.15
 
 require (
+	git.sr.ht/~emersion/go-scfg v0.0.0-20201019141958-764b187dbd52
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/klauspost/cpuid v1.3.1 // indirect
