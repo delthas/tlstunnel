@@ -55,9 +55,18 @@ The following directives are supported:
 		The _+proxy_ suffix can be added to the URI scheme to forward
 		connection metadata via the PROXY protocol.
 
+	*tls* { ... }
+		Customise frontend-specific TLS configuration.
+
+		The tls directive supports the following sub-directives:
+
+		*load* <cert> <key>
+			Load certificates and private keys from PEM files.
+
+			This disables automatic TLS.
 
 *tls* { ... }
-	Customise TLS configuration.
+	Customise global TLS configuration.
 
 	The tls directive supports the following sub-directives:
 

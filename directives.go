@@ -1,6 +1,7 @@
 package tlstunnel
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/url"
@@ -40,13 +41,23 @@ func parseFrontend(srv *Server, d *scfg.Directive) error {
 		return err
 	}
 
+	unmanaged := false
+	tlsDirective := d.Children.Get("tls")
+	if tlsDirective != nil {
+		var err error
+		unmanaged, err = parseFrontendTLS(srv, tlsDirective)
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, addr := range d.Params {
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
 			return fmt.Errorf("failed to parse frontend address %q: %v", addr, err)
 		}
 
-		if host != "" {
+		if host != "" && !unmanaged {
 			srv.ManagedNames = append(srv.ManagedNames, host)
 		}
 
@@ -94,6 +105,29 @@ func parseBackend(backend *Backend, d *scfg.Directive) error {
 	}
 
 	return nil
+}
+
+func parseFrontendTLS(srv *Server, d *scfg.Directive) (unmanaged bool, err error) {
+	for _, child := range d.Children {
+		switch child.Name {
+		case "load":
+			var certPath, keyPath string
+			if err := child.ParseParams(&certPath, &keyPath); err != nil {
+				return false, err
+			}
+
+			cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+			if err != nil {
+				return false, fmt.Errorf("directive \"load\": %v", err)
+			}
+
+			srv.UnmanagedCerts = append(srv.UnmanagedCerts, cert)
+			unmanaged = true
+		default:
+			return false, fmt.Errorf("unknown %q directive", child.Name)
+		}
+	}
+	return unmanaged, nil
 }
 
 func parseTLS(srv *Server, d *scfg.Directive) error {

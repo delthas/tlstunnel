@@ -16,11 +16,14 @@ import (
 )
 
 type Server struct {
-	Listeners    map[string]*Listener // indexed by listening address
-	Frontends    []*Frontend
-	ManagedNames []string
-	ACMEManager  *certmagic.ACMEManager
-	ACMEConfig   *certmagic.Config
+	Listeners map[string]*Listener // indexed by listening address
+	Frontends []*Frontend
+
+	ManagedNames   []string
+	UnmanagedCerts []tls.Certificate
+
+	ACMEManager *certmagic.ACMEManager
+	ACMEConfig  *certmagic.Config
 }
 
 func NewServer() *Server {
@@ -55,6 +58,12 @@ func (srv *Server) RegisterListener(addr string) *Listener {
 }
 
 func (srv *Server) Start() error {
+	for _, cert := range srv.UnmanagedCerts {
+		if err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(cert, nil); err != nil {
+			return err
+		}
+	}
+
 	if err := srv.ACMEConfig.ManageAsync(context.Background(), srv.ManagedNames); err != nil {
 		return fmt.Errorf("failed to manage TLS certificates: %v", err)
 	}
