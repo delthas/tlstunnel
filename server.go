@@ -31,7 +31,7 @@ func NewServer() *Server {
 
 	mgr := certmagic.NewACMEManager(cfg, certmagic.DefaultACME)
 	mgr.Agreed = true
-	// TODO: enable HTTP challenge by peeking incoming requests on port 80
+	// We're a TLS server, we don't speak HTTP
 	mgr.DisableHTTPChallenge = true
 	cfg.Issuer = mgr
 	cfg.Revoker = mgr
