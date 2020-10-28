@@ -7,13 +7,13 @@ require (
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/libdns/digitalocean v0.0.0-20200817185712-f11d70f2506c
-	github.com/mholt/acmez v0.1.1-0.20200811184240-dc9c5f05ed1e
+	github.com/mholt/acmez v0.1.1
 	github.com/miekg/dns v1.1.31 // indirect
 	github.com/pires/go-proxyproto v0.2.1-0.20201009121050-c24efa3e2d93
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.16.0 // indirect
+	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20201009032441-dbdefad45b89 // indirect

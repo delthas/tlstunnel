@@ -9,10 +9,12 @@ import (
 	"net"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"git.sr.ht/~emersion/go-scfg"
 
-	"github.com/mholt/acmez"
 	"github.com/caddyserver/certmagic"
+	"github.com/mholt/acmez"
 	"github.com/pires/go-proxyproto"
 	"github.com/pires/go-proxyproto/tlvparse"
 )
@@ -37,6 +39,15 @@ func NewServer() *Server {
 	mgr.DisableHTTPChallenge = true
 	cfg.Issuer = mgr
 	cfg.Revoker = mgr
+
+	loggerCfg := zap.NewDevelopmentConfig()
+	loggerCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	logger, err := loggerCfg.Build()
+	if err != nil {
+		log.Fatalf("failed to initialize zap logger: %v", err)
+	}
+	cfg.Logger = logger
+	mgr.Logger = logger
 
 	return &Server{
 		Listeners:   make(map[string]*Listener),
