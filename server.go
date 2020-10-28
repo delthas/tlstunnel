@@ -13,7 +13,6 @@ import (
 	"github.com/caddyserver/certmagic"
 	"github.com/pires/go-proxyproto"
 	"github.com/pires/go-proxyproto/tlvparse"
-	"go.uber.org/zap"
 )
 
 type Server struct {
@@ -36,22 +35,6 @@ func NewServer() *Server {
 	mgr.DisableHTTPChallenge = true
 	cfg.Issuer = mgr
 	cfg.Revoker = mgr
-
-	loggerCfg := zap.Config{
-		Level:             zap.NewAtomicLevelAt(zap.InfoLevel),
-		Encoding:          "console",
-		EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
-		OutputPaths:       []string{"stderr"},
-		ErrorOutputPaths:  []string{"stderr"},
-		DisableStacktrace: true,
-		DisableCaller:     true,
-	}
-	logger, err := loggerCfg.Build()
-	if err != nil {
-		log.Fatalf("failed to initialize zap logger: %v", err)
-	}
-	cfg.Logger = logger
-	mgr.Logger = logger
 
 	return &Server{
 		Listeners:   make(map[string]*Listener),

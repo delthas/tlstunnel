@@ -7,6 +7,7 @@ import (
 	"git.sr.ht/~emersion/go-scfg"
 	"git.sr.ht/~emersion/tlstunnel"
 	"github.com/caddyserver/certmagic"
+	"go.uber.org/zap"
 )
 
 var (
@@ -24,6 +25,22 @@ func main() {
 	}
 
 	srv := tlstunnel.NewServer()
+
+	loggerCfg := zap.Config{
+		Level:             zap.NewAtomicLevelAt(zap.InfoLevel),
+		Encoding:          "console",
+		EncoderConfig:     zap.NewDevelopmentEncoderConfig(),
+		OutputPaths:       []string{"stderr"},
+		ErrorOutputPaths:  []string{"stderr"},
+		DisableStacktrace: true,
+		DisableCaller:     true,
+	}
+	logger, err := loggerCfg.Build()
+	if err != nil {
+		log.Fatalf("failed to initialize zap logger: %v", err)
+	}
+	srv.ACMEConfig.Logger = logger
+	srv.ACMEManager.Logger = logger
 
 	if certDataPath != "" {
 		srv.ACMEConfig.Storage = &certmagic.FileStorage{Path: certDataPath}
