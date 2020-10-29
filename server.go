@@ -217,16 +217,11 @@ func duplexCopy(a, b io.ReadWriter) error {
 	return <-done
 }
 
-func newTLV(t proxyproto.PP2Type, v []byte) proxyproto.TLV {
-	return proxyproto.TLV{
-		Type:   t,
-		Length: len(v),
-		Value:  v,
-	}
-}
-
 func authorityTLV(name string) proxyproto.TLV {
-	return newTLV(proxyproto.PP2_TYPE_AUTHORITY, []byte(name))
+	return proxyproto.TLV{
+		Type:  proxyproto.PP2_TYPE_AUTHORITY,
+		Value: []byte(name),
+	}
 }
 
 func sslTLV(state *tls.ConnectionState) (proxyproto.TLV, error) {
@@ -247,7 +242,10 @@ func sslTLV(state *tls.ConnectionState) (proxyproto.TLV, error) {
 		version = "TLSv1.3"
 	}
 	if version != "" {
-		versionTLV := newTLV(proxyproto.PP2_SUBTYPE_SSL_VERSION, []byte(version))
+		versionTLV := proxyproto.TLV{
+			Type:  proxyproto.PP2_SUBTYPE_SSL_VERSION,
+			Value: []byte(version),
+		}
 		pp2ssl.TLV = append(pp2ssl.TLV, versionTLV)
 	}
 
