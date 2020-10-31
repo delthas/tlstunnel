@@ -94,6 +94,15 @@ func parseBackend(backend *Backend, d *scfg.Directive) error {
 	}
 
 	switch u.Scheme {
+	case "tls":
+		host, _, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			return fmt.Errorf("failed to parse backend address %q: %v", u.Host, err)
+		}
+		backend.TLSConfig = &tls.Config{
+			ServerName: host,
+		}
+		fallthrough
 	case "", "tcp":
 		backend.Network = "tcp"
 		backend.Address = u.Host

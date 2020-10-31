@@ -50,6 +50,7 @@ The following directives are supported:
 		The following URIs are supported:
 
 		- _[tcp://]<host>:<port>_ connects to a TCP server
+		- _tls://<host>:<port>_ connects to a TLS over TCP server
 		- _unix://<path>_ connects to a Unix socket
 
 		The _+proxy_ suffix can be added to the URI scheme to forward

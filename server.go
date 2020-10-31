@@ -172,6 +172,9 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 	if err != nil {
 		return fmt.Errorf("failed to dial backend: %v", err)
 	}
+	if be.TLSConfig != nil {
+		upstream = tls.Client(upstream, be.TLSConfig)
+	}
 	defer upstream.Close()
 
 	if be.Proxy {
@@ -199,9 +202,10 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 }
 
 type Backend struct {
-	Network string
-	Address string
-	Proxy   bool
+	Network   string
+	Address   string
+	Proxy     bool
+	TLSConfig *tls.Config // nil if no TLS
 }
 
 func duplexCopy(a, b io.ReadWriter) error {
