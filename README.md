@@ -28,4 +28,4 @@ MIT
 [tlstunnel]: https://sr.ht/~emersion/tlstunnel/
 [PROXY protocol]: https://www.haproxy.org/download/2.3/doc/proxy-protocol.txt
 [mailing list]: https://lists.sr.ht/~emersion/public-inbox
-[issue tracker]: https://git.sr.ht/~emersion/tlstunnel
+[issue tracker]: https://todo.sr.ht/~emersion/tlstunnel
