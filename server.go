@@ -15,10 +15,6 @@ import (
 	"github.com/pires/go-proxyproto/tlvparse"
 )
 
-type conn struct {
-	downstream, upstream net.Conn
-}
-
 type Server struct {
 	Listeners map[string]*Listener // indexed by listening address
 	Frontends []*Frontend
@@ -28,8 +24,6 @@ type Server struct {
 
 	ACMEManager *certmagic.ACMEManager
 	ACMEConfig  *certmagic.Config
-
-	conns map[*conn]struct{}
 }
 
 func NewServer() *Server {
@@ -82,16 +76,10 @@ func (srv *Server) Start() error {
 	return nil
 }
 
-func (srv *Server) Close() error {
-	
-}
-
 type Listener struct {
 	Address   string
 	Server    *Server
 	Frontends map[string]*Frontend // indexed by server name
-
-	ln net.Listener
 }
 
 func newListener(srv *Server, addr string) *Listener {
@@ -117,8 +105,6 @@ func (ln *Listener) Start() error {
 	}
 	log.Printf("listening on %q", ln.Address)
 
-	ln.ln = netLn
-
 	go func() {
 		if err := ln.serve(netLn); err != nil {
 			log.Fatalf("listener %q: %v", ln.Address, err)
@@ -126,10 +112,6 @@ func (ln *Listener) Start() error {
 	}()
 
 	return nil
-}
-
-func (ln *Listener) Close() error {
-	return ln.ln.Close()
 }
 
 func (ln *Listener) serve(netLn net.Listener) error {
