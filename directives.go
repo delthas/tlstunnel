@@ -108,7 +108,7 @@ func parseBackend(backend *Backend, d *scfg.Directive) error {
 		backend.Address = u.Host
 	case "unix":
 		backend.Network = "unix"
-		backend.Address = u.Host
+		backend.Address = u.Path
 	default:
 		return fmt.Errorf("failed to setup backend %q: unsupported URI scheme", backendURI)
 	}
