@@ -266,7 +266,7 @@ func authorityTLV(name string) proxyproto.TLV {
 
 func alpnTLV(proto string) proxyproto.TLV {
 	return proxyproto.TLV{
-		Type: proxyproto.PP2_TYPE_ALPN,
+		Type:  proxyproto.PP2_TYPE_ALPN,
 		Value: []byte(proto),
 	}
 }
