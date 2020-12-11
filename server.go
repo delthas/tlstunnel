@@ -192,7 +192,6 @@ func (ln *Listener) matchFrontend(serverName string) (*Frontend, error) {
 }
 
 type Frontend struct {
-	Server    *Server
 	Backend   Backend
 	Protocols []string
 }

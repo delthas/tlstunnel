@@ -29,7 +29,7 @@ func parseConfig(srv *Server, cfg scfg.Block) error {
 }
 
 func parseFrontend(srv *Server, d *scfg.Directive) error {
-	frontend := &Frontend{Server: srv}
+	frontend := &Frontend{}
 	srv.Frontends = append(srv.Frontends, frontend)
 
 	// TODO: support multiple backends
