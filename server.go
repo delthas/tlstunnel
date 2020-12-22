@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync/atomic"
 
 	"git.sr.ht/~emersion/go-scfg"
 	"github.com/caddyserver/certmagic"
@@ -24,6 +25,8 @@ type Server struct {
 
 	ACMEManager *certmagic.ACMEManager
 	ACMEConfig  *certmagic.Config
+
+	cancelACME context.CancelFunc
 }
 
 func NewServer() *Server {
@@ -57,15 +60,26 @@ func (srv *Server) RegisterListener(addr string) *Listener {
 	return ln
 }
 
-func (srv *Server) Start() error {
+func (srv *Server) startACME() error {
+	var ctx context.Context
+	ctx, srv.cancelACME = context.WithCancel(context.Background())
+
 	for _, cert := range srv.UnmanagedCerts {
 		if err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(cert, nil); err != nil {
 			return err
 		}
 	}
 
-	if err := srv.ACMEConfig.ManageAsync(context.Background(), srv.ManagedNames); err != nil {
+	if err := srv.ACMEConfig.ManageAsync(ctx, srv.ManagedNames); err != nil {
 		return fmt.Errorf("failed to manage TLS certificates: %v", err)
+	}
+
+	return nil
+}
+
+func (srv *Server) Start() error {
+	if err := srv.startACME(); err != nil {
+		return err
 	}
 
 	for _, ln := range srv.Listeners {
@@ -76,37 +90,94 @@ func (srv *Server) Start() error {
 	return nil
 }
 
-type Listener struct {
-	Address   string
+func (srv *Server) Stop() {
+	srv.cancelACME()
+	// TODO: clean cached unmanaged certs
+	for _, ln := range srv.Listeners {
+		ln.Stop()
+	}
+}
+
+// Replace starts the server but takes over existing listeners from an old
+// Server instance. The old instance keeps running unchanged if Replace
+// returns an error.
+func (srv *Server) Replace(old *Server) error {
+	// Try to start new listeners
+	for addr, ln := range srv.Listeners {
+		if _, ok := old.Listeners[addr]; ok {
+			continue
+		}
+		if err := ln.Start(); err != nil {
+			for _, ln2 := range srv.Listeners {
+				ln2.Stop()
+			}
+			return err
+		}
+	}
+
+	// Restart ACME
+	old.cancelACME()
+	if err := srv.startACME(); err != nil {
+		for _, ln2 := range srv.Listeners {
+			ln2.Stop()
+		}
+		return err
+	}
+	// TODO: clean cached unmanaged certs
+
+	// Take over existing listeners and terminate old ones
+	for addr, oldLn := range old.Listeners {
+		if ln, ok := srv.Listeners[addr]; ok {
+			srv.Listeners[addr] = oldLn.UpdateFrom(ln)
+		} else {
+			oldLn.Stop()
+		}
+	}
+
+	return nil
+}
+
+type listenerHandles struct {
 	Server    *Server
 	Frontends map[string]*Frontend // indexed by server name
 }
 
+type Listener struct {
+	Address string
+	netLn   net.Listener
+	atomic  atomic.Value
+}
+
 func newListener(srv *Server, addr string) *Listener {
-	return &Listener{
-		Address:   addr,
+	ln := &Listener{
+		Address: addr,
+	}
+	ln.atomic.Store(&listenerHandles{
 		Server:    srv,
 		Frontends: make(map[string]*Frontend),
-	}
+	})
+	return ln
 }
 
 func (ln *Listener) RegisterFrontend(name string, fe *Frontend) error {
-	if _, ok := ln.Frontends[name]; ok {
+	fes := ln.atomic.Load().(*listenerHandles).Frontends
+	if _, ok := fes[name]; ok {
 		return fmt.Errorf("listener %q: duplicate frontends for server name %q", ln.Address, name)
 	}
-	ln.Frontends[name] = fe
+	fes[name] = fe
 	return nil
 }
 
 func (ln *Listener) Start() error {
-	netLn, err := net.Listen("tcp", ln.Address)
+	var err error
+	ln.netLn, err = net.Listen("tcp", ln.Address)
 	if err != nil {
 		return err
 	}
 	log.Printf("listening on %q", ln.Address)
 
 	go func() {
-		if err := ln.serve(netLn); err != nil {
+		if err := ln.serve(); err != nil {
 			log.Fatalf("listener %q: %v", ln.Address, err)
 		}
 	}()
@@ -114,10 +185,22 @@ func (ln *Listener) Start() error {
 	return nil
 }
 
-func (ln *Listener) serve(netLn net.Listener) error {
+func (ln *Listener) Stop() {
+	ln.netLn.Close()
+}
+
+func (ln *Listener) UpdateFrom(new *Listener) *Listener {
+	ln.atomic.Store(new.atomic.Load())
+	return ln
+}
+
+func (ln *Listener) serve() error {
 	for {
-		conn, err := netLn.Accept()
-		if err != nil {
+		conn, err := ln.netLn.Accept()
+		if err != nil && strings.Contains(err.Error(), "use of closed network connection") {
+			// Listening socket has been closed by Stop()
+			return nil
+		} else if err != nil {
 			return fmt.Errorf("failed to accept connection: %v", err)
 		}
 
@@ -131,9 +214,10 @@ func (ln *Listener) serve(netLn net.Listener) error {
 
 func (ln *Listener) handle(conn net.Conn) error {
 	defer conn.Close()
+	srv := ln.atomic.Load().(*listenerHandles).Server
 
 	// TODO: setup timeouts
-	tlsConfig := ln.Server.ACMEConfig.TLSConfig()
+	tlsConfig := srv.ACMEConfig.TLSConfig()
 	getConfigForClient := tlsConfig.GetConfigForClient
 	tlsConfig.GetConfigForClient = func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
 		// Call previous GetConfigForClient function, if any
@@ -145,7 +229,7 @@ func (ln *Listener) handle(conn net.Conn) error {
 				return nil, err
 			}
 		} else {
-			tlsConfig = ln.Server.ACMEConfig.TLSConfig()
+			tlsConfig = srv.ACMEConfig.TLSConfig()
 		}
 
 		fe, err := ln.matchFrontend(hello.ServerName)
@@ -171,18 +255,20 @@ func (ln *Listener) handle(conn net.Conn) error {
 }
 
 func (ln *Listener) matchFrontend(serverName string) (*Frontend, error) {
-	fe, ok := ln.Frontends[serverName]
+	fes := ln.atomic.Load().(*listenerHandles).Frontends
+
+	fe, ok := fes[serverName]
 	if !ok {
 		// Match wildcard certificates, allowing only a single, non-partial
 		// wildcard, in the left-most label
 		i := strings.IndexByte(serverName, '.')
 		// Don't allow wildcards with only a TLD (e.g. *.com)
 		if i >= 0 && strings.IndexByte(serverName[i+1:], '.') >= 0 {
-			fe, ok = ln.Frontends["*"+serverName[i:]]
+			fe, ok = fes["*"+serverName[i:]]
 		}
 	}
 	if !ok {
-		fe, ok = ln.Frontends[""]
+		fe, ok = fes[""]
 	}
 	if !ok {
 		return nil, fmt.Errorf("can't find frontend for server name %q", serverName)
