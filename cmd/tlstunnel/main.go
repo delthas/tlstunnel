@@ -72,12 +72,12 @@ func main() {
 
 	for sig := range sigCh {
 		switch sig {
-		case syscall.SIGINT:
-		case syscall.SIGTERM:
+		case syscall.SIGINT, syscall.SIGTERM:
+			log.Print("stopping server")
 			srv.Stop()
 			return
 		case syscall.SIGHUP:
-			log.Print("caught SIGHUP, reloading config")
+			log.Print("reloading config")
 			newSrv, err := newServer()
 			if err != nil {
 				log.Printf("reload failed: %v", err)
