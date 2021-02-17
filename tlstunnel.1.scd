@@ -98,6 +98,12 @@ The following directives are supported:
 	*on_demand*
 		Enable on-demand TLS.
 
+		When enabled, a TLS handshake may trigger maintenance for the relevant
+		certificate. If no existing certificate is available, a new certificate
+		is obtained and the connection is blocked until it's available. If an
+		existing certificate is available, the certificate is renewed in the
+		background if necessary.
+
 # FILES
 
 _/etc/tlstunnel/config_
