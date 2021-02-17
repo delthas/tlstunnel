@@ -121,6 +121,7 @@ func (srv *Server) Stop() {
 	for _, ln := range srv.Listeners {
 		ln.Stop()
 	}
+	srv.acmeCache.cache.Stop()
 }
 
 // Replace starts the server but takes over existing listeners from an old
