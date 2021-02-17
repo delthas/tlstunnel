@@ -95,7 +95,7 @@ The following directives are supported:
 		The email address to use when creating or selecting an existing ACME
 		server account
 
-	*on_demand*
+	*on_demand* { ... }
 		Enable on-demand TLS.
 
 		When enabled, a TLS handshake may trigger maintenance for the relevant
@@ -103,6 +103,18 @@ The following directives are supported:
 		is obtained and the connection is blocked until it's available. If an
 		existing certificate is available, the certificate is renewed in the
 		background if necessary.
+
+		Warning: to prevent abuse, you should specify a _validate_command_
+		sub-directive.
+
+		The on_demand directive supports the following optional sub-directives:
+
+		*validate_command* command [arguments...]
+			Command to run before an on-demand certificate is obtained. If the
+			command returns a non-zero exit status, the request is denied.
+
+			The environment will contain a *TLSTUNNEL_NAME* variable with the
+			domain name to be validated.
 
 # FILES
 

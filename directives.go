@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
+	"os/exec"
 	"strings"
 
 	"git.sr.ht/~emersion/go-scfg"
@@ -161,10 +163,46 @@ func parseTLS(srv *Server, d *scfg.Directive) error {
 			}
 			srv.ACMEManager.Email = email
 		case "on_demand":
-			srv.ACMEConfig.OnDemand = &certmagic.OnDemandConfig{}
+			if err := parseTLSOnDemand(srv, child); err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unknown %q directive", child.Name)
 		}
 	}
+	return nil
+}
+
+func parseTLSOnDemand(srv *Server, d *scfg.Directive) error {
+	if srv.ACMEConfig.OnDemand == nil {
+		srv.ACMEConfig.OnDemand = &certmagic.OnDemandConfig{}
+	}
+
+	for _, child := range d.Children {
+		switch child.Name {
+		case "validate_command":
+			var cmdName string
+			if err := child.ParseParams(&cmdName); err != nil {
+				return err
+			}
+			decisionFunc := srv.ACMEConfig.OnDemand.DecisionFunc
+			srv.ACMEConfig.OnDemand.DecisionFunc = func(name string) error {
+				if decisionFunc != nil {
+					if err := decisionFunc(name); err != nil {
+						return err
+					}
+				}
+				cmd := exec.Command(cmdName, child.Params[1:]...)
+				cmd.Env = append(os.Environ(), "TLSTUNNEL_NAME="+name)
+				if err := cmd.Run(); err != nil {
+					return fmt.Errorf("failed to validate domain %q with command %q: %v", name, cmdName, err)
+				}
+				return nil
+			}
+		default:
+			return fmt.Errorf("unknown %q directive", child.Name)
+		}
+	}
+
 	return nil
 }
