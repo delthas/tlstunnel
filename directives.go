@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"git.sr.ht/~emersion/go-scfg"
+	"github.com/caddyserver/certmagic"
 )
 
 func parseConfig(srv *Server, cfg scfg.Block) error {
@@ -159,6 +160,8 @@ func parseTLS(srv *Server, d *scfg.Directive) error {
 				return err
 			}
 			srv.ACMEManager.Email = email
+		case "on_demand":
+			srv.ACMEConfig.OnDemand = &certmagic.OnDemandConfig{}
 		default:
 			return fmt.Errorf("unknown %q directive", child.Name)
 		}

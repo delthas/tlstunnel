@@ -95,6 +95,9 @@ The following directives are supported:
 		The email address to use when creating or selecting an existing ACME
 		server account
 
+	*on_demand*
+		Enable on-demand TLS.
+
 # FILES
 
 _/etc/tlstunnel/config_
