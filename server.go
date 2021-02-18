@@ -20,7 +20,7 @@ import (
 const tlsHandshakeTimeout = 20 * time.Second
 
 type acmeCache struct {
-	config *certmagic.Config
+	config atomic.Value
 	cache  *certmagic.Cache
 }
 
@@ -28,7 +28,7 @@ func newACMECache() *acmeCache {
 	cache := &acmeCache{}
 	cache.cache = certmagic.NewCache(certmagic.CacheOptions{
 		GetConfigForCert: func(certmagic.Certificate) (*certmagic.Config, error) {
-			return cache.config, nil
+			return cache.config.Load().(*certmagic.Config), nil
 		},
 	})
 	return cache
@@ -87,7 +87,7 @@ func (srv *Server) startACME() error {
 
 	srv.ACMEConfig.Issuers = []certmagic.Issuer{srv.ACMEManager}
 
-	srv.acmeCache.config = srv.ACMEConfig
+	srv.acmeCache.config.Store(srv.ACMEConfig)
 
 	for _, cert := range srv.UnmanagedCerts {
 		if err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(cert, nil); err != nil {
