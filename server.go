@@ -371,9 +371,6 @@ func duplexCopy(a, b io.ReadWriter) error {
 		_, err := io.Copy(b, a)
 		done <- err
 	}()
-	if err := <-done; err != nil {
-		return err
-	}
 	return <-done
 }
 
