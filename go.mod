@@ -4,9 +4,8 @@ go 1.15
 
 require (
 	git.sr.ht/~emersion/go-scfg v0.0.0-20201019143924-142a8aa629fc
-	github.com/caddyserver/certmagic v0.12.0
+	github.com/caddyserver/certmagic v0.12.1-0.20210211020017-ebb8d8b435b4
 	github.com/klauspost/cpuid v1.3.1 // indirect
-	github.com/mholt/acmez v0.1.3 // indirect
 	github.com/miekg/dns v1.1.38 // indirect
 	github.com/pires/go-proxyproto v0.4.2
 	github.com/pkg/errors v0.9.1 // indirect

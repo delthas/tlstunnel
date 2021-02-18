@@ -85,8 +85,7 @@ func (srv *Server) startACME() error {
 	srv.ACMEConfig = certmagic.New(srv.acmeCache.cache, *srv.ACMEConfig)
 	srv.ACMEManager = certmagic.NewACMEManager(srv.ACMEConfig, *srv.ACMEManager)
 
-	srv.ACMEConfig.Issuer = srv.ACMEManager
-	srv.ACMEConfig.Revoker = srv.ACMEManager
+	srv.ACMEConfig.Issuers = []certmagic.Issuer{srv.ACMEManager}
 
 	srv.acmeCache.config = srv.ACMEConfig
 
