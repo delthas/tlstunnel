@@ -266,7 +266,7 @@ func (ln *Listener) handle(conn net.Conn) error {
 			return nil, err
 		}
 
-		tlsConfig.NextProtos = fe.Protocols
+		tlsConfig.NextProtos = append(tlsConfig.NextProtos, fe.Protocols...)
 		return tlsConfig, nil
 	}
 	tlsConn := tls.Server(conn, tlsConfig)
