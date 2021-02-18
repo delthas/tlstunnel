@@ -89,7 +89,7 @@ func (srv *Server) startACME() error {
 
 	for _, cert := range srv.UnmanagedCerts {
 		if err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(cert, nil); err != nil {
-			return err
+			return fmt.Errorf("failed to cache unmanaged TLS certificate: %v", err)
 		}
 	}
 
@@ -109,7 +109,7 @@ func (srv *Server) Start() error {
 
 	for _, ln := range srv.Listeners {
 		if err := ln.Start(); err != nil {
-			return err
+			return fmt.Errorf("failed to start listener: %v", err)
 		}
 	}
 	return nil
@@ -137,7 +137,7 @@ func (srv *Server) Replace(old *Server) error {
 			for _, ln2 := range srv.Listeners {
 				ln2.Stop()
 			}
-			return err
+			return fmt.Errorf("failed to start listener: %v", err)
 		}
 	}
 
@@ -147,10 +147,10 @@ func (srv *Server) Replace(old *Server) error {
 	// Restart ACME
 	old.cancelACME()
 	if err := srv.startACME(); err != nil {
-		for _, ln2 := range srv.Listeners {
-			ln2.Stop()
+		for _, ln := range srv.Listeners {
+			ln.Stop()
 		}
-		return err
+		return fmt.Errorf("failed to start ACME: %v", err)
 	}
 	// TODO: clean cached unmanaged certs
 
@@ -271,7 +271,7 @@ func (ln *Listener) handle(conn net.Conn) error {
 	}
 	tlsConn := tls.Server(conn, tlsConfig)
 	if err := tlsConn.Handshake(); err != nil {
-		return err
+		return fmt.Errorf("TLS handshake failed: %v", err)
 	}
 
 	tlsState := tlsConn.ConnectionState()
@@ -348,7 +348,10 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 		}
 	}
 
-	return duplexCopy(upstream, downstream)
+	if err := duplexCopy(upstream, downstream); err != nil {
+		return fmt.Errorf("failed to copy bytes: %v", err)
+	}
+	return nil
 }
 
 type Backend struct {
@@ -368,6 +371,9 @@ func duplexCopy(a, b io.ReadWriter) error {
 		_, err := io.Copy(b, a)
 		done <- err
 	}()
+	if err := <-done; err != nil {
+		return err
+	}
 	return <-done
 }
 
