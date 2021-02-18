@@ -17,7 +17,7 @@ import (
 	"github.com/pires/go-proxyproto/tlvparse"
 )
 
-const tlsHandshakeTimeout = 10 * time.Second
+const tlsHandshakeTimeout = 20 * time.Second
 
 type acmeCache struct {
 	config *certmagic.Config
