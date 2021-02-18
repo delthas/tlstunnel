@@ -119,7 +119,6 @@ func (srv *Server) Start() error {
 
 func (srv *Server) Stop() {
 	srv.cancelACME()
-	// TODO: clean cached unmanaged certs
 	for _, ln := range srv.Listeners {
 		ln.Stop()
 	}
@@ -154,7 +153,6 @@ func (srv *Server) Replace(old *Server) error {
 		}
 		return fmt.Errorf("failed to start ACME: %v", err)
 	}
-	// TODO: clean cached unmanaged certs
 
 	// Take over existing listeners and terminate old ones
 	for addr, oldLn := range old.Listeners {
@@ -164,6 +162,21 @@ func (srv *Server) Replace(old *Server) error {
 			oldLn.Stop()
 		}
 	}
+
+	// Cleanup managed certs which are no longer used
+	managed := make(map[string]struct{}, len(old.ManagedNames))
+	for _, name := range srv.ManagedNames {
+		managed[name] = struct{}{}
+	}
+	unmanage := make([]string, 0, len(old.ManagedNames))
+	for _, name := range old.ManagedNames {
+		if _, ok := managed[name]; !ok {
+			unmanage = append(unmanage, name)
+		}
+	}
+	srv.ACMEConfig.Unmanage(unmanage)
+
+	// TODO: evict unused unmanaged certs from the cache
 
 	return nil
 }
