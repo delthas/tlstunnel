@@ -9,12 +9,15 @@ import (
 	"net"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"git.sr.ht/~emersion/go-scfg"
 	"github.com/caddyserver/certmagic"
 	"github.com/pires/go-proxyproto"
 	"github.com/pires/go-proxyproto/tlvparse"
 )
+
+const tlsHandshakeTimeout = 10 * time.Second
 
 type acmeCache struct {
 	config *certmagic.Config
@@ -245,7 +248,6 @@ func (ln *Listener) handle(conn net.Conn) error {
 	defer conn.Close()
 	srv := ln.atomic.Load().(*listenerHandles).Server
 
-	// TODO: setup timeouts
 	tlsConfig := srv.ACMEConfig.TLSConfig()
 	getConfigForClient := tlsConfig.GetConfigForClient
 	tlsConfig.GetConfigForClient = func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
@@ -270,9 +272,17 @@ func (ln *Listener) handle(conn net.Conn) error {
 		return tlsConfig, nil
 	}
 	tlsConn := tls.Server(conn, tlsConfig)
+
+	if err := tlsConn.SetDeadline(time.Now().Add(tlsHandshakeTimeout)); err != nil {
+		return fmt.Errorf("failed to set TLS handshake timeout: %v", err)
+	}
 	if err := tlsConn.Handshake(); err != nil {
 		return fmt.Errorf("TLS handshake failed: %v", err)
 	}
+	if err := tlsConn.SetDeadline(time.Time{}); err != nil {
+		return fmt.Errorf("failed to reset TLS handshake timeout: %v", err)
+	}
+	// TODO: allow setting custom downstream timeouts
 
 	tlsState := tlsConn.ConnectionState()
 	fe, err := ln.matchFrontend(tlsState.ServerName)
@@ -313,6 +323,8 @@ type Frontend struct {
 
 func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) error {
 	defer downstream.Close()
+
+	// TODO: setup upstream timeouts
 
 	be := &fe.Backend
 	upstream, err := net.Dial(be.Network, be.Address)
