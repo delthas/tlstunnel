@@ -31,3 +31,5 @@ install: all
 	mkdir -p $(DESTDIR)$(SYSCONFDIR)/tlstunnel
 	cp -f tlstunnel $(DESTDIR)$(BINDIR)
 	cp -f tlstunnel.1 $(DESTDIR)$(MANDIR)/man1
+
+.PHONY: tlstunnel clean install
