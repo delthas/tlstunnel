@@ -128,4 +128,4 @@ _/var/lib/tlstunnel_
 
 Maintained by Simon Ser <contact@emersion.fr>, who is assisted by other
 open-source contributors. For more information about tlstunnel development, see
-https://git.sr.ht/~emersion/tlstunnel.
+<https://git.sr.ht/~emersion/tlstunnel>.
