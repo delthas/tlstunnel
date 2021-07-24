@@ -25,7 +25,7 @@ tlstunnel.1: tlstunnel.1.scd
 clean:
 	$(RM) -rf tlstunnel tlstunnel.1
 
-install: all
+install:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(SYSCONFDIR)/tlstunnel
