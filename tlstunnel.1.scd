@@ -42,7 +42,10 @@ The following directives are supported:
 *frontend* <address>... { ... }
 	Addresses to listen on for incoming TLS connections.
 
-	Each address is in the form _<name>:<port>_. The name may be omitted.
+	Each address is in the form _<name>:<port>_. The name may be omitted to
+	match all hosts. The name can contain a wildcard, but only to represent the
+	first label of the hostname (e.g. _*.example.org_ works, matches
+	_foo.example.org_ but doesn't match _foo.bar.example.org_).
 
 	The frontend directive supports the following sub-directives:
 
@@ -72,6 +75,7 @@ The following directives are supported:
 		List of supported application-layer protocols.
 
 		The first protocol which is also supported by the client is negociated.
+		The backend can inspect the negotiated protocol via the PROXY protocol.
 
 		The protocols will be advertised via the TLS ALPN extension. See the
 		IANA registry for a list of protocol names:
