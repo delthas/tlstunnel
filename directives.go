@@ -192,11 +192,21 @@ func parseTLSOnDemand(srv *Server, d *scfg.Directive) error {
 						return err
 					}
 				}
+
+				// If the user has explicitly requested a certificate for this
+				// name to be maintained, no need to perform the command check
+				for _, n := range srv.ManagedNames {
+					if strings.EqualFold(n, name) {
+						return nil
+					}
+				}
+
 				cmd := exec.Command(cmdName, child.Params[1:]...)
 				cmd.Env = append(os.Environ(), "TLSTUNNEL_NAME="+name)
 				if err := cmd.Run(); err != nil {
 					return fmt.Errorf("failed to validate domain %q with command %q: %v", name, cmdName, err)
 				}
+
 				return nil
 			}
 		default:
