@@ -44,7 +44,7 @@ The following directives are supported:
 
 	Each address is in the form _<name>:<port>_. The name may be omitted to
 	match all hosts. The name can contain a wildcard, but only to represent the
-	first label of the hostname (e.g. _*.example.org_ works, matches
+	first label of the hostname (e.g. _\*.example.org_ works, matches
 	_foo.example.org_ but doesn't match _foo.bar.example.org_).
 
 	The frontend directive supports the following sub-directives:
