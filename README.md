@@ -19,7 +19,7 @@ See the man page for more information.
 ## Contributing
 
 Send patches to the [mailing list], report bugs on the [issue tracker].
-Discuss in ##emersion on Freenode.
+Discuss in [#emersion on Libera Chat].
 
 ## License
 
@@ -29,3 +29,4 @@ MIT
 [PROXY protocol]: https://www.haproxy.org/download/2.3/doc/proxy-protocol.txt
 [mailing list]: https://lists.sr.ht/~emersion/public-inbox
 [issue tracker]: https://todo.sr.ht/~emersion/tlstunnel
+[#emersion on Libera Chat]: ircs://irc.libera.chat/#emersion
