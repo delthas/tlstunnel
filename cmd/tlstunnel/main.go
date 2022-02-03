@@ -54,9 +54,25 @@ func newServer() (*tlstunnel.Server, error) {
 	return srv, nil
 }
 
+func bumpOpenedFileLimit() error {
+	var rlimit syscall.Rlimit
+	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rlimit); err != nil {
+		return fmt.Errorf("failed to get RLIMIT_NOFILE: %v", err)
+	}
+	rlimit.Cur = rlimit.Max
+	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rlimit); err != nil {
+		return fmt.Errorf("failed to set RLIMIT_NOFILE: %v", err)
+	}
+	return nil
+}
+
 func main() {
 	flag.StringVar(&configPath, "config", configPath, "path to configuration file")
 	flag.Parse()
+
+	if err := bumpOpenedFileLimit(); err != nil {
+		log.Printf("failed to bump max number of opened files: %v", err)
+	}
 
 	srv, err := newServer()
 	if err != nil {
