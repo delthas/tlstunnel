@@ -220,6 +220,8 @@ func (ln *Listener) Start() error {
 	}
 	log.Printf("listening on %q", ln.Address)
 
+	ln.netLn = &retryListener{Listener: ln.netLn}
+
 	go func() {
 		if err := ln.serve(); err != nil {
 			log.Fatalf("listener %q: %v", ln.Address, err)
@@ -443,4 +445,31 @@ func sslTLV(state *tls.ConnectionState) (proxyproto.TLV, error) {
 	// TODO: check client-provided cert, if any
 
 	return pp2ssl.Marshal()
+}
+
+type retryListener struct {
+	net.Listener
+
+	delay time.Duration
+}
+
+func (ln *retryListener) Accept() (net.Conn, error) {
+	for {
+		conn, err := ln.Listener.Accept()
+		if ne, ok := err.(net.Error); ok && ne.Temporary() {
+			if ln.delay == 0 {
+				ln.delay = 5 * time.Millisecond
+			} else {
+				ln.delay *= 2
+			}
+			if max := 1 * time.Second; ln.delay > max {
+				ln.delay = max
+			}
+			log.Printf("listener %q: accept error (retrying in %v): %v", ln.Addr(), ln.delay, err)
+			time.Sleep(ln.delay)
+		} else {
+			ln.delay = 0
+			return conn, err
+		}
+	}
 }
