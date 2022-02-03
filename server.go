@@ -288,7 +288,9 @@ func (ln *Listener) handle(conn net.Conn) error {
 	if err := tlsConn.SetDeadline(time.Now().Add(tlsHandshakeTimeout)); err != nil {
 		return fmt.Errorf("failed to set TLS handshake timeout: %v", err)
 	}
-	if err := tlsConn.Handshake(); err != nil {
+	if err := tlsConn.Handshake(); err == io.EOF {
+		return nil
+	} else if err != nil {
 		return fmt.Errorf("TLS handshake failed: %v", err)
 	}
 	if err := tlsConn.SetDeadline(time.Time{}); err != nil {
