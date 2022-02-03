@@ -119,8 +119,10 @@ func (srv *Server) Start() error {
 
 func (srv *Server) Stop() {
 	srv.cancelACME()
-	for _, ln := range srv.Listeners {
-		ln.Stop()
+	for addr, ln := range srv.Listeners {
+		if err := ln.Stop(); err != nil {
+			log.Printf("listener %q: failed to stop: %v", addr, err)
+		}
 	}
 	srv.acmeCache.cache.Stop()
 }
@@ -159,7 +161,9 @@ func (srv *Server) Replace(old *Server) error {
 		if ln, ok := srv.Listeners[addr]; ok {
 			srv.Listeners[addr] = oldLn.UpdateFrom(ln)
 		} else {
-			oldLn.Stop()
+			if err := oldLn.Stop(); err != nil {
+				log.Printf("listener %q: failed to stop: %v", addr, err)
+			}
 		}
 	}
 
@@ -231,8 +235,8 @@ func (ln *Listener) Start() error {
 	return nil
 }
 
-func (ln *Listener) Stop() {
-	ln.netLn.Close()
+func (ln *Listener) Stop() error {
+	return ln.netLn.Close()
 }
 
 func (ln *Listener) UpdateFrom(new *Listener) *Listener {
