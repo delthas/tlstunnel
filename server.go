@@ -205,9 +205,14 @@ type clientError struct {
 	error
 }
 
+type frontendKey struct {
+	server   string
+	protocol string
+}
+
 type listenerHandles struct {
 	Server    *Server
-	Frontends map[string]*Frontend // indexed by server name
+	Frontends map[frontendKey]*Frontend
 }
 
 type Listener struct {
@@ -222,17 +227,29 @@ func newListener(srv *Server, addr string) *Listener {
 	}
 	ln.atomic.Store(&listenerHandles{
 		Server:    srv,
-		Frontends: make(map[string]*Frontend),
+		Frontends: make(map[frontendKey]*Frontend),
 	})
 	return ln
 }
 
 func (ln *Listener) RegisterFrontend(name string, fe *Frontend) error {
 	fes := ln.atomic.Load().(*listenerHandles).Frontends
-	if _, ok := fes[name]; ok {
-		return fmt.Errorf("listener %q: duplicate frontends for server name %q", ln.Address, name)
+	for _, proto := range fe.Protocols {
+		key := frontendKey{
+			server:   name,
+			protocol: proto,
+		}
+		if _, ok := fes[key]; ok {
+			return fmt.Errorf("listener %q: duplicate frontends for server name %q and protocol %q", ln.Address, name, proto)
+		}
+		fes[key] = fe
 	}
-	fes[name] = fe
+	noProto := frontendKey{
+		server: name,
+	}
+	if _, ok := fes[noProto]; !ok {
+		fes[noProto] = fe
+	}
 	return nil
 }
 
@@ -307,17 +324,43 @@ func (ln *Listener) handle(conn net.Conn) error {
 			tlsConfig = srv.ACMEConfig.TLSConfig()
 		}
 
-		fe, err := ln.matchFrontend(hello.ServerName)
-		if err != nil {
-			return nil, err
+		fes := ln.atomic.Load().(*listenerHandles).Frontends
+		serverName := hello.ServerName
+		ok := false
+		for key, fe := range fes {
+			if key.server == serverName {
+				ok = true
+				if key.protocol != "" {
+					tlsConfig.NextProtos = append(tlsConfig.NextProtos, key.protocol)
+					if fe.ClientAuth != tls.NoClientCert {
+						tlsConfig.ClientAuth = fe.ClientAuth
+						tlsConfig.ClientCAs = fe.ClientCAs
+					}
+				}
+			}
 		}
-
-		tlsConfig.NextProtos = append(tlsConfig.NextProtos, fe.Protocols...)
-		if fe.ClientAuth != tls.NoClientCert {
-			tlsConfig.ClientAuth = fe.ClientAuth
-			tlsConfig.ClientCAs = fe.ClientCAs
+		if ok {
+			return tlsConfig, nil
 		}
-		return tlsConfig, nil
+		serverName = wildcard(serverName)
+		if serverName != "" {
+			for key, fe := range fes {
+				if key.server == serverName {
+					ok = true
+					if key.protocol != "" {
+						tlsConfig.NextProtos = append(tlsConfig.NextProtos, key.protocol)
+						if fe.ClientAuth != tls.NoClientCert {
+							tlsConfig.ClientAuth = fe.ClientAuth
+							tlsConfig.ClientCAs = fe.ClientCAs
+						}
+					}
+				}
+			}
+		}
+		if ok {
+			return tlsConfig, nil
+		}
+		return nil, fmt.Errorf("can't find frontend for server name %q", serverName)
 	}
 	tlsConn := tls.Server(conn, tlsConfig)
 
@@ -335,7 +378,7 @@ func (ln *Listener) handle(conn net.Conn) error {
 	// TODO: allow setting custom downstream timeouts
 
 	tlsState := tlsConn.ConnectionState()
-	fe, err := ln.matchFrontend(tlsState.ServerName)
+	fe, err := ln.matchFrontend(tlsState.ServerName, tlsState.NegotiatedProtocol)
 	if err != nil {
 		return err
 	}
@@ -343,26 +386,38 @@ func (ln *Listener) handle(conn net.Conn) error {
 	return fe.handle(tlsConn, &tlsState)
 }
 
-func (ln *Listener) matchFrontend(serverName string) (*Frontend, error) {
+func wildcard(name string) string {
+	// Match wildcard certificates, allowing only a single, non-partial
+	// wildcard, in the left-most label
+	i := strings.IndexByte(name, '.')
+	// Don't allow wildcards with only a TLD (e.g. *.com)
+	if i >= 0 && strings.IndexByte(name[i+1:], '.') >= 0 {
+		return "*" + name[i:]
+	}
+	return ""
+}
+
+func (ln *Listener) matchFrontend(serverName string, protocol string) (*Frontend, error) {
 	fes := ln.atomic.Load().(*listenerHandles).Frontends
-
-	fe, ok := fes[serverName]
+	fe, ok := fes[frontendKey{
+		server:   serverName,
+		protocol: protocol,
+	}]
 	if !ok {
-		// Match wildcard certificates, allowing only a single, non-partial
-		// wildcard, in the left-most label
-		i := strings.IndexByte(serverName, '.')
-		// Don't allow wildcards with only a TLD (e.g. *.com)
-		if i >= 0 && strings.IndexByte(serverName[i+1:], '.') >= 0 {
-			fe, ok = fes["*"+serverName[i:]]
-		}
+		fe, ok = fes[frontendKey{
+			server:   wildcard(serverName),
+			protocol: protocol,
+		}]
 	}
 	if !ok {
-		fe, ok = fes[""]
+		fe, ok = fes[frontendKey{
+			server:   "",
+			protocol: protocol,
+		}]
 	}
 	if !ok {
-		return nil, fmt.Errorf("can't find frontend for server name %q", serverName)
+		return nil, fmt.Errorf("can't find frontend for server name %q and protocol %q", serverName, protocol)
 	}
-
 	return fe, nil
 }
 
