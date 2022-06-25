@@ -64,6 +64,10 @@ func parseFrontend(srv *Server, d *scfg.Directive) error {
 		addresses = append(addresses, listenDirective.Params...)
 	}
 
+	if len(addresses) == 0 {
+		return fmt.Errorf("missing listening addresses in frontend block")
+	}
+
 	for _, addr := range addresses {
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
