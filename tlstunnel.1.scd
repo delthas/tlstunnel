@@ -49,6 +49,9 @@ The following directives are supported:
 
 	The frontend directive supports the following sub-directives:
 
+	*listen* <address>...
+		Additional addresses to listen on.
+
 	*backend* <uri>...
 		Backend to forward incoming connections to.
 

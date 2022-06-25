@@ -59,7 +59,12 @@ func parseFrontend(srv *Server, d *scfg.Directive) error {
 		frontend.Protocols = protocolDirective.Params
 	}
 
-	for _, addr := range d.Params {
+	addresses := append([]string(nil), d.Params...)
+	for _, listenDirective := range d.Children.GetAll("listen") {
+		addresses = append(addresses, listenDirective.Params...)
+	}
+
+	for _, addr := range addresses {
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
 			return fmt.Errorf("failed to parse frontend address %q: %v", addr, err)
