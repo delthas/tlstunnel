@@ -41,8 +41,8 @@ type Server struct {
 	ManagedNames   []string
 	UnmanagedCerts []tls.Certificate
 
-	ACMEManager *certmagic.ACMEManager
-	ACMEConfig  *certmagic.Config
+	ACMEIssuer *certmagic.ACMEIssuer
+	ACMEConfig *certmagic.Config
 
 	acmeCache  *acmeCache
 	cancelACME context.CancelFunc
@@ -58,9 +58,9 @@ func NewServer() *Server {
 	acmeManager.DisableHTTPChallenge = true
 
 	return &Server{
-		Listeners:   make(map[string]*Listener),
-		ACMEManager: &acmeManager,
-		ACMEConfig:  &acmeConfig,
+		Listeners:  make(map[string]*Listener),
+		ACMEIssuer: &acmeManager,
+		ACMEConfig: &acmeConfig,
 	}
 }
 
@@ -83,14 +83,14 @@ func (srv *Server) startACME() error {
 	ctx, srv.cancelACME = context.WithCancel(context.Background())
 
 	srv.ACMEConfig = certmagic.New(srv.acmeCache.cache, *srv.ACMEConfig)
-	srv.ACMEManager = certmagic.NewACMEManager(srv.ACMEConfig, *srv.ACMEManager)
+	srv.ACMEIssuer = certmagic.NewACMEIssuer(srv.ACMEConfig, *srv.ACMEIssuer)
 
-	srv.ACMEConfig.Issuers = []certmagic.Issuer{srv.ACMEManager}
+	srv.ACMEConfig.Issuers = []certmagic.Issuer{srv.ACMEIssuer}
 
 	srv.acmeCache.config.Store(srv.ACMEConfig)
 
 	for _, cert := range srv.UnmanagedCerts {
-		if err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(cert, nil); err != nil {
+		if err := srv.ACMEConfig.CacheUnmanagedTLSCertificate(ctx, cert, nil); err != nil {
 			return fmt.Errorf("failed to cache unmanaged TLS certificate: %v", err)
 		}
 	}

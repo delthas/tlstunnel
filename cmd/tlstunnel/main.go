@@ -41,7 +41,7 @@ func newServer() (*tlstunnel.Server, error) {
 		return nil, fmt.Errorf("failed to initialize zap logger: %w", err)
 	}
 	srv.ACMEConfig.Logger = logger
-	srv.ACMEManager.Logger = logger
+	srv.ACMEIssuer.Logger = logger
 
 	if certDataPath != "" {
 		srv.ACMEConfig.Storage = &certmagic.FileStorage{Path: certDataPath}

@@ -164,13 +164,13 @@ func parseTLS(srv *Server, d *scfg.Directive) error {
 			if err := child.ParseParams(&caURL); err != nil {
 				return err
 			}
-			srv.ACMEManager.CA = caURL
+			srv.ACMEIssuer.CA = caURL
 		case "email":
 			var email string
 			if err := child.ParseParams(&email); err != nil {
 				return err
 			}
-			srv.ACMEManager.Email = email
+			srv.ACMEIssuer.Email = email
 		case "on_demand":
 			if err := parseTLSOnDemand(srv, child); err != nil {
 				return err
