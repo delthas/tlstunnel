@@ -1,6 +1,6 @@
 module git.sr.ht/~emersion/tlstunnel
 
-go 1.15
+go 1.16
 
 require (
 	git.sr.ht/~emersion/go-scfg v0.0.0-20211215104734-c2c7a15d6c99

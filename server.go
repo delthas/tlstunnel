@@ -3,6 +3,7 @@ package tlstunnel
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -247,7 +248,7 @@ func (ln *Listener) UpdateFrom(new *Listener) *Listener {
 func (ln *Listener) serve() error {
 	for {
 		conn, err := ln.netLn.Accept()
-		if err != nil && strings.Contains(err.Error(), "use of closed network connection") {
+		if errors.Is(err, net.ErrClosed) {
 			// Listening socket has been closed by Stop()
 			return nil
 		} else if err != nil {
