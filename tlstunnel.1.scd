@@ -123,6 +123,13 @@ The following directives are supported:
 			The environment will contain a *TLSTUNNEL_NAME* variable with the
 			domain name to be validated.
 
+	*acme_dns_command* command [arguments...]
+		Configure the ACME DNS challenge using the specified command.
+
+		The command must implement _deploy_challenge_ and _clean_challenge_
+		as specified by dehydrated's hooks:
+		https://github.com/dehydrated-io/dehydrated
+
 # FILES
 
 _/etc/tlstunnel/config_

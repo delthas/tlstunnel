@@ -175,6 +175,19 @@ func parseTLS(srv *Server, d *scfg.Directive) error {
 			if err := parseTLSOnDemand(srv, child); err != nil {
 				return err
 			}
+		case "acme_dns_command":
+			var cmdName string
+			if err := child.ParseParams(&cmdName); err != nil {
+				return err
+			}
+			cmdParams := child.Params[1:]
+
+			srv.ACMEIssuer.DNS01Solver = &certmagic.DNS01Solver{
+				DNSProvider: &commandDNSProvider{
+					Name:   cmdName,
+					Params: cmdParams,
+				},
+			}
 		default:
 			return fmt.Errorf("unknown %q directive", child.Name)
 		}
