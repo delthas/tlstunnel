@@ -1,6 +1,6 @@
 # [tlstunnel]
 
-[![builds.sr.ht status](https://builds.sr.ht/~emersion/tlstunnel/commits.svg)](https://builds.sr.ht/~emersion/tlstunnel/commits?)
+[![builds.sr.ht status](https://builds.sr.ht/~emersion/tlstunnel/commits/master.svg)](https://builds.sr.ht/~emersion/tlstunnel/commits/master?)
 
 A TLS reverse proxy.
 
