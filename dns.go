@@ -62,10 +62,20 @@ func (provider *commandDNSProvider) DeleteRecords(ctx context.Context, zone stri
 }
 
 func domainFromACMEChallengeRecord(zone string, rec *libdns.Record) (string, error) {
-	if rec.Type != "TXT" || !strings.HasPrefix(rec.Name, "_acme-challenge.") {
+	relZone := strings.TrimSuffix(zone, ".")
+
+	var domain string
+	if rec.Name == "_acme-challenge" {
+		// Root domain
+		domain = relZone
+	} else if strings.HasPrefix(rec.Name, "_acme-challenge.") {
+		// Subdomain
+		relName := strings.TrimPrefix(rec.Name, "_acme-challenge.")
+		domain = relName + "." + relZone
+	}
+	if rec.Type != "TXT" || domain == "" {
 		return "", fmt.Errorf("DNS record doesn't look like an ACME challenge: %v %v", rec.Type, rec.Name)
 	}
-	relName := strings.TrimPrefix(rec.Name, "_acme-challenge.")
-	relZone := strings.TrimSuffix(zone, ".")
-	return relName + "." + relZone, nil
+
+	return domain, nil
 }
