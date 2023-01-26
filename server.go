@@ -38,6 +38,7 @@ func newACMECache() *acmeCache {
 type Server struct {
 	Listeners map[string]*Listener // indexed by listening address
 	Frontends []*Frontend
+	Debug     bool
 
 	ManagedNames   []string
 	UnmanagedCerts []tls.Certificate
@@ -256,8 +257,10 @@ func (ln *Listener) serve() error {
 		}
 
 		go func() {
-			if err := ln.handle(conn); err != nil {
-				log.Printf("listener %q: %v", ln.Address, err)
+			err := ln.handle(conn)
+			srv := ln.atomic.Load().(*listenerHandles).Server
+			if err != nil && srv.Debug {
+				log.Printf("listener %q: connection %q: %v", ln.Address, conn.RemoteAddr(), err)
 			}
 		}()
 	}

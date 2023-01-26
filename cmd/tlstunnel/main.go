@@ -17,6 +17,8 @@ import (
 var (
 	configPath   = "config"
 	certDataPath = ""
+
+	debug = false
 )
 
 func newServer() (*tlstunnel.Server, error) {
@@ -26,6 +28,7 @@ func newServer() (*tlstunnel.Server, error) {
 	}
 
 	srv := tlstunnel.NewServer()
+	srv.Debug = debug
 
 	loggerCfg := zap.Config{
 		Level:             zap.NewAtomicLevelAt(zap.InfoLevel),
@@ -68,6 +71,7 @@ func bumpOpenedFileLimit() error {
 
 func main() {
 	flag.StringVar(&configPath, "config", configPath, "path to configuration file")
+	flag.BoolVar(&debug, "debug", false, "enable debug logging")
 	flag.Parse()
 
 	if err := bumpOpenedFileLimit(); err != nil {
