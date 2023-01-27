@@ -64,6 +64,20 @@ The following directives are supported:
 		The _+proxy_ suffix can be added to the URI scheme to forward
 		connection metadata via the PROXY protocol.
 
+		The backend directive supports the following sub-directives:
+
+		*tls_certfp* sha-256 <fingerprint>
+			Instead of using CAs to check the TLS certificate provided by the
+			backend, check that the certificate matches the provided
+			fingerprint. This can be used to connect to servers with a
+			self-signed certificate, for instance.
+
+			The fingerprint of a certificate can be obtained via *openssl*(1):
+
+			```
+			openssl x509 -fingerprint -sha256 -noout <certificate>
+			```
+
 	*tls* { ... }
 		Customise frontend-specific TLS configuration.
 

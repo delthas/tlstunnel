@@ -1,7 +1,11 @@
 package tlstunnel
 
 import (
+	"crypto/sha256"
+	"crypto/subtle"
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/url"
@@ -128,6 +132,49 @@ func parseBackend(backend *Backend, d *scfg.Directive) error {
 		backend.Address = u.Path
 	default:
 		return fmt.Errorf("failed to setup backend %q: unsupported URI scheme", backendURI)
+	}
+
+	for _, child := range d.Children {
+		switch child.Name {
+		case "tls_certfp":
+			if backend.TLSConfig == nil {
+				return fmt.Errorf("tls_certfp requires a tls:// backend address")
+			}
+
+			var algo, wantCertFP string
+			if err := child.ParseParams(&algo, &wantCertFP); err != nil {
+				return err
+			}
+			if algo != "sha-256" {
+				return fmt.Errorf("directive tls_certfp: only sha-256 is supported")
+			}
+
+			wantCertFP = strings.ReplaceAll(wantCertFP, ":", "")
+			wantSum, err := hex.DecodeString(wantCertFP)
+			if err != nil {
+				return fmt.Errorf("directive tls_certfp: invalid fingerprint: %v", err)
+			} else if len(wantSum) != sha256.Size {
+				return fmt.Errorf("directive tls_certfp: invalid fingerprint length")
+			}
+
+			backend.TLSConfig.InsecureSkipVerify = true
+			backend.TLSConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+				if len(rawCerts) == 0 {
+					return fmt.Errorf("the server didn't present any TLS certificate")
+				}
+
+				for _, rawCert := range rawCerts {
+					sum := sha256.Sum256(rawCert)
+					if subtle.ConstantTimeCompare(sum[:], wantSum) == 1 {
+						return nil // fingerprints match
+					}
+				}
+
+				sum := sha256.Sum256(rawCerts[0])
+				remoteCertFP := hex.EncodeToString(sum[:])
+				return fmt.Errorf("configured TLS certificate fingerprint doesn't match the server's - %s", remoteCertFP)
+			}
+		}
 	}
 
 	return nil
