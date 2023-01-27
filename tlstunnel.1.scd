@@ -52,7 +52,7 @@ The following directives are supported:
 	*listen* <address>...
 		Additional addresses to listen on.
 
-	*backend* <uri>...
+	*backend* <uri>
 		Backend to forward incoming connections to.
 
 		The following URIs are supported:
