@@ -187,6 +187,10 @@ func (srv *Server) Replace(old *Server) error {
 	return nil
 }
 
+type clientError struct {
+	error
+}
+
 type listenerHandles struct {
 	Server    *Server
 	Frontends map[string]*Frontend // indexed by server name
@@ -259,7 +263,8 @@ func (ln *Listener) serve() error {
 		go func() {
 			err := ln.handle(conn)
 			srv := ln.atomic.Load().(*listenerHandles).Server
-			if err != nil && srv.Debug {
+			var clientErr clientError
+			if !errors.As(err, &clientErr) || srv.Debug {
 				log.Printf("listener %q: connection %q: %v", ln.Address, conn.RemoteAddr(), err)
 			}
 		}()
@@ -301,7 +306,7 @@ func (ln *Listener) handle(conn net.Conn) error {
 	if err := tlsConn.Handshake(); err == io.EOF {
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("TLS handshake failed: %v", err)
+		return clientError{fmt.Errorf("TLS handshake failed: %v", err)}
 	}
 	if err := tlsConn.SetDeadline(time.Time{}); err != nil {
 		return fmt.Errorf("failed to reset TLS handshake timeout: %v", err)
@@ -385,7 +390,7 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 	}
 
 	if err := duplexCopy(upstream, downstream); err != nil {
-		return fmt.Errorf("failed to copy bytes: %v", err)
+		return clientError{fmt.Errorf("failed to copy bytes: %v", err)}
 	}
 	return nil
 }
