@@ -52,7 +52,7 @@ The following directives are supported:
 	*listen* <address>...
 		Additional addresses to listen on.
 
-	*backend* <uri>
+	*backend* <uri> { ... }
 		Backend to forward incoming connections to.
 
 		The following URIs are supported:
@@ -77,6 +77,11 @@ The following directives are supported:
 			```
 			openssl x509 -fingerprint -sha256 -noout <certificate>
 			```
+
+		*proxy_version* <version>
+			PROXY protocol version to use, if _+proxy_ is specified.
+			The supported versions are 1 and 2.
+			If not specified, the PROXY version used defaults to version 2.
 
 	*tls* { ... }
 		Customise frontend-specific TLS configuration.

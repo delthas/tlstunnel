@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"git.sr.ht/~emersion/go-scfg"
@@ -174,6 +175,21 @@ func parseBackend(backend *Backend, d *scfg.Directive) error {
 				remoteCertFP := hex.EncodeToString(sum[:])
 				return fmt.Errorf("configured TLS certificate fingerprint doesn't match the server's - %s", remoteCertFP)
 			}
+		case "proxy_version":
+			var version string
+			if err := child.ParseParams(&version); err != nil {
+				return err
+			}
+			v, err := strconv.Atoi(version)
+			if err != nil {
+				return fmt.Errorf("directive proxy_version: invalid version: %v", err)
+			}
+			switch v {
+			case 1, 2:
+			default:
+				return fmt.Errorf("directive proxy_version: unknown version: %v", v)
+			}
+			backend.ProxyVersion = v
 		}
 	}
 

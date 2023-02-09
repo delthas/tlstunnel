@@ -366,7 +366,7 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 	defer upstream.Close()
 
 	if be.Proxy {
-		h := proxyproto.HeaderProxyFromAddrs(2, downstream.RemoteAddr(), downstream.LocalAddr())
+		h := proxyproto.HeaderProxyFromAddrs(byte(be.ProxyVersion), downstream.RemoteAddr(), downstream.LocalAddr())
 
 		var tlvs []proxyproto.TLV
 		if tlsState.ServerName != "" {
@@ -396,10 +396,11 @@ func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) e
 }
 
 type Backend struct {
-	Network   string
-	Address   string
-	Proxy     bool
-	TLSConfig *tls.Config // nil if no TLS
+	Network      string
+	Address      string
+	Proxy        bool
+	ProxyVersion int
+	TLSConfig    *tls.Config // nil if no TLS
 }
 
 func duplexCopy(a, b io.ReadWriter) error {
