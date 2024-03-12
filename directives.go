@@ -1,6 +1,7 @@
 package tlstunnel
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/subtle"
 	"crypto/tls"
@@ -285,9 +286,9 @@ func parseTLSOnDemand(srv *Server, d *scfg.Directive) error {
 				return err
 			}
 			decisionFunc := srv.ACMEConfig.OnDemand.DecisionFunc
-			srv.ACMEConfig.OnDemand.DecisionFunc = func(name string) error {
+			srv.ACMEConfig.OnDemand.DecisionFunc = func(ctx context.Context, name string) error {
 				if decisionFunc != nil {
-					if err := decisionFunc(name); err != nil {
+					if err := decisionFunc(ctx, name); err != nil {
 						return err
 					}
 				}
@@ -300,7 +301,7 @@ func parseTLSOnDemand(srv *Server, d *scfg.Directive) error {
 					}
 				}
 
-				cmd := exec.Command(cmdName, child.Params[1:]...)
+				cmd := exec.CommandContext(ctx, cmdName, child.Params[1:]...)
 				cmd.Env = append(os.Environ(), "TLSTUNNEL_NAME="+name)
 				if err := cmd.Run(); err != nil {
 					return fmt.Errorf("failed to validate domain %q with command %q: %v", name, cmdName, err)
