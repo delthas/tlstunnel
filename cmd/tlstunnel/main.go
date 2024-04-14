@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"git.sr.ht/~emersion/go-scfg"
 	"git.sr.ht/~emersion/tlstunnel"
 	"github.com/caddyserver/certmagic"
 	"go.uber.org/zap"
@@ -22,11 +21,6 @@ var (
 )
 
 func newServer() (*tlstunnel.Server, error) {
-	cfg, err := scfg.Load(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config file: %w", err)
-	}
-
 	srv := tlstunnel.NewServer()
 	srv.Debug = debug
 
@@ -50,8 +44,8 @@ func newServer() (*tlstunnel.Server, error) {
 		srv.ACMEConfig.Storage = &certmagic.FileStorage{Path: certDataPath}
 	}
 
-	if err := srv.Load(cfg); err != nil {
-		return nil, err
+	if err := srv.Load(configPath); err != nil {
+		return nil, fmt.Errorf("failed to load config %q: %v", configPath, err)
 	}
 
 	return srv, nil

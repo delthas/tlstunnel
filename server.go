@@ -12,7 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.sr.ht/~emersion/go-scfg"
 	"github.com/caddyserver/certmagic"
 	"github.com/pires/go-proxyproto"
 	"github.com/pires/go-proxyproto/tlvparse"
@@ -67,8 +66,8 @@ func NewServer() *Server {
 	}
 }
 
-func (srv *Server) Load(cfg scfg.Block) error {
-	return parseConfig(srv, cfg)
+func (srv *Server) Load(filename string) error {
+	return loadConfig(srv, filename)
 }
 
 func (srv *Server) RegisterListener(addr string) *Listener {
