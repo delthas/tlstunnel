@@ -39,7 +39,8 @@ type frontendConfig struct {
 	} `scfg:"listen"`
 	Backend *backendConfig `scfg:"backend"`
 	TLS     struct {
-		Load *[2]string `scfg:"load"`
+		Load       *[2]string `scfg:"load"`
+		ClientAuth *[2]string `scfg:"client_auth"`
 	} `scfg:"tls"`
 	Protocol []string `scfg:"protocol"`
 }
@@ -128,6 +129,25 @@ func parseFrontend(srv *Server, cfg *frontendConfig) error {
 
 		srv.UnmanagedCerts = append(srv.UnmanagedCerts, cert)
 		unmanaged = true
+	}
+	if cfg.TLS.ClientAuth != nil {
+		clientAuth, err := parseClientAuth(cfg.TLS.ClientAuth[0])
+		if err != nil {
+			return fmt.Errorf(`directive "tls.client_auth": %w`, err)
+		}
+
+		clientCAs, err := os.ReadFile(cfg.TLS.ClientAuth[1])
+		if err != nil {
+			return fmt.Errorf(`directive "tls.client_auth": %w`, err)
+		}
+
+		pool := x509.NewCertPool()
+		if ok := pool.AppendCertsFromPEM(clientCAs); !ok {
+			return fmt.Errorf("failed to append to client pool")
+		}
+
+		frontend.ClientAuth = clientAuth
+		frontend.ClientCAs = pool
 	}
 
 	frontend.Protocols = cfg.Protocol
@@ -291,4 +311,21 @@ func parseTLSOnDemand(srv *Server, cfg *tlsOnDemandConfig) error {
 	}
 
 	return nil
+}
+
+func parseClientAuth(clientAuth string) (tls.ClientAuthType, error) {
+	var auth tls.ClientAuthType
+	switch clientAuth {
+	case "request":
+		auth = tls.RequestClientCert
+	case "require":
+		auth = tls.RequireAnyClientCert
+	case "verify":
+		auth = tls.RequireAnyClientCert
+	case "require_and_verify":
+		auth = tls.RequireAndVerifyClientCert
+	default:
+		return auth, fmt.Errorf("unknown client auth %s", clientAuth)
+	}
+	return auth, nil
 }

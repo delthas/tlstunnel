@@ -3,6 +3,7 @@ package tlstunnel
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -312,6 +313,10 @@ func (ln *Listener) handle(conn net.Conn) error {
 		}
 
 		tlsConfig.NextProtos = append(tlsConfig.NextProtos, fe.Protocols...)
+		if fe.ClientAuth != tls.NoClientCert {
+			tlsConfig.ClientAuth = fe.ClientAuth
+			tlsConfig.ClientCAs = fe.ClientCAs
+		}
 		return tlsConfig, nil
 	}
 	tlsConn := tls.Server(conn, tlsConfig)
@@ -362,8 +367,10 @@ func (ln *Listener) matchFrontend(serverName string) (*Frontend, error) {
 }
 
 type Frontend struct {
-	Backend   Backend
-	Protocols []string
+	Backend    Backend
+	Protocols  []string
+	ClientAuth tls.ClientAuthType
+	ClientCAs  *x509.CertPool
 }
 
 func (fe *Frontend) handle(downstream net.Conn, tlsState *tls.ConnectionState) error {

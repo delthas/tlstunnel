@@ -93,6 +93,17 @@ The following directives are supported:
 
 			This disables automatic TLS.
 
+		*client_auth* <type> <cert>
+			Configures client authentication.
+
+			The available verification types are the following:
+			request, require, verify, require_and_verify. They are
+			defined here:
+			https://pkg.go.dev/crypto/tls#ClientAuthType.
+
+			The certificate must be a PEM file and is used as a CA to validate
+			client certificates.
+
 	*protocol* <name>...
 		List of supported application-layer protocols.
 
