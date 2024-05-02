@@ -253,17 +253,6 @@ func parseBackend(backend *Backend, cfg *backendConfig) error {
 	return nil
 }
 
-func parseFrontendTLS(srv *Server, d *scfg.Directive) (unmanaged bool, err error) {
-	for _, child := range d.Children {
-		switch child.Name {
-		case "load":
-		default:
-			return false, fmt.Errorf("unknown %q directive", child.Name)
-		}
-	}
-	return unmanaged, nil
-}
-
 func parseTLSOnDemand(srv *Server, cfg *tlsOnDemandConfig) error {
 	if srv.ACMEConfig.OnDemand == nil {
 		srv.ACMEConfig.OnDemand = &certmagic.OnDemandConfig{}
