@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net"
 	"net/url"
 	"os"
@@ -69,6 +70,30 @@ func loadConfig(srv *Server, filename string) error {
 		if err := parseFrontend(srv, &feCfg); err != nil {
 			return fmt.Errorf(`directive "frontend": %v`, err)
 		}
+	}
+
+	// Build a copy of the list of managed named, that removes domains
+	// when a matching wildcard is also found.
+	// This enables tlstunnel to only request certifiates for the wildcard
+	// even when other domains matching that wildcard are explicitly added.
+	srv.ManagedNamesMerged = make([]string, 0, len(srv.ManagedNames))
+outer:
+	for _, n := range srv.ManagedNames {
+		if nw := wildcard(n); nw != "" {
+			for _, w := range srv.ManagedNames {
+				if nw == w {
+					// A wildcard matching that domain was found, do not add it.
+					continue outer
+				}
+			}
+		}
+		for _, o := range srv.ManagedNamesMerged {
+			if n == o {
+				// That certificate was already added.
+				continue outer
+			}
+		}
+		srv.ManagedNamesMerged = append(srv.ManagedNamesMerged, n)
 	}
 
 	srv.ACMEIssuer.CA = cfg.TLS.ACMECA

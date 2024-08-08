@@ -40,8 +40,9 @@ type Server struct {
 	Frontends []*Frontend
 	Debug     bool
 
-	ManagedNames   []string
-	UnmanagedCerts []tls.Certificate
+	ManagedNames       []string
+	ManagedNamesMerged []string
+	UnmanagedCerts     []tls.Certificate
 
 	ACMEIssuer *certmagic.ACMEIssuer
 	ACMEConfig *certmagic.Config
@@ -100,7 +101,7 @@ func (srv *Server) startACME() error {
 		srv.unmanagedHashes = append(srv.unmanagedHashes, hash)
 	}
 
-	if err := srv.ACMEConfig.ManageAsync(ctx, srv.ManagedNames); err != nil {
+	if err := srv.ACMEConfig.ManageAsync(ctx, srv.ManagedNamesMerged); err != nil {
 		return fmt.Errorf("failed to manage TLS certificates: %v", err)
 	}
 
@@ -173,12 +174,12 @@ func (srv *Server) Replace(old *Server) error {
 	}
 
 	// Cleanup managed certs which are no longer used
-	managed := make(map[string]struct{}, len(srv.ManagedNames))
-	for _, name := range srv.ManagedNames {
+	managed := make(map[string]struct{}, len(srv.ManagedNamesMerged))
+	for _, name := range srv.ManagedNamesMerged {
 		managed[name] = struct{}{}
 	}
-	removeManaged := make([]string, 0, len(old.ManagedNames))
-	for _, name := range old.ManagedNames {
+	removeManaged := make([]string, 0, len(old.ManagedNamesMerged))
+	for _, name := range old.ManagedNamesMerged {
 		if _, ok := managed[name]; !ok {
 			removeManaged = append(removeManaged, name)
 		}
@@ -389,6 +390,12 @@ func (ln *Listener) handle(conn net.Conn) error {
 func wildcard(name string) string {
 	// Match wildcard certificates, allowing only a single, non-partial
 	// wildcard, in the left-most label
+
+	// A wildcard domain name does not have a (distinct) wildcard domain.
+	if strings.HasPrefix(name, "*.") {
+		return ""
+	}
+
 	i := strings.IndexByte(name, '.')
 	// Don't allow wildcards with only a TLD (e.g. *.com)
 	if i >= 0 && strings.IndexByte(name[i+1:], '.') >= 0 {
