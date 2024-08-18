@@ -17,8 +17,6 @@ import (
 	"git.sr.ht/~emersion/go-scfg"
 	"github.com/caddyserver/certmagic"
 	"github.com/libdns/dnsupdate"
-
-	"log"
 )
 
 type serverConfig struct {
@@ -66,7 +64,6 @@ func loadConfig(srv *Server, filename string) error {
 	if err := scfg.NewDecoder(f).Decode(&cfg); err != nil {
 		return err
 	}
-	log.Printf("%#v", cfg)
 
 	for _, feCfg := range cfg.Frontend {
 		if err := parseFrontend(srv, &feCfg); err != nil {
